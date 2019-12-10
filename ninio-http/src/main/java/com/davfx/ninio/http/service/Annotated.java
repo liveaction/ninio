@@ -1,20 +1,5 @@
 package com.davfx.ninio.http.service;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.davfx.ninio.http.HttpListening;
 import com.davfx.ninio.http.HttpMethod;
 import com.davfx.ninio.http.HttpRequest;
@@ -39,6 +24,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.reflect.TypeToken;
 import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public final class Annotated {
 	
@@ -696,7 +695,7 @@ public final class Annotated {
 			if (c.type.equals(t)) {
 				return c.converter;
 			}
-			if (c.type.isAssignableFrom(t)) {
+			if (c.type.isSupertypeOf(t)) {
 				return c.converter;
 			}
 		}
