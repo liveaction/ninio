@@ -211,6 +211,15 @@
                 <version>3.0.0</version>
                 <extensions>true</extensions>
             </plugin>
+            <plugin>
+                <groupId>com.amashchenko.maven.plugin</groupId>
+                <artifactId>gitflow-maven-plugin</artifactId>
+                <version>1.10.0</version>
+                <configuration>
+                    <postHotfixGoals>deploy</postHotfixGoals>
+                    <postReleaseGoals>deploy</postReleaseGoals>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
