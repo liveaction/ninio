@@ -30,11 +30,11 @@ public final class SnmpClient implements SnmpConnecter {
 
 	private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(SnmpClient.class.getPackage().getName());
 
-	static final int DEFAULT_PORT = 161;
+	public static final int DEFAULT_PORT = 161;
 
-	static final int DEFAULT_TRAP_PORT = 162;
+	public static final int DEFAULT_TRAP_PORT = 162;
 
-	static final int BULK_SIZE = CONFIG.getInt("bulkSize");
+	public  static final int BULK_SIZE = CONFIG.getInt("bulkSize");
 
 	public static interface Builder extends NinioBuilder<SnmpConnecter> {
 		@Deprecated
@@ -43,7 +43,7 @@ public final class SnmpClient implements SnmpConnecter {
 		Builder with(NinioBuilder<Connecter> connecterFactory);
 	}
 	
-	static Builder builder() {
+	public static Builder builder() {
 		return new Builder() {
 			private NinioBuilder<Connecter> connecterFactory = UdpSocket.builder();
 			
