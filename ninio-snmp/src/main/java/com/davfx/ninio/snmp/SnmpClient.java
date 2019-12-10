@@ -1,19 +1,5 @@
 package com.davfx.ninio.snmp;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.Executor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Connecter;
 import com.davfx.ninio.core.Connection;
@@ -23,20 +9,32 @@ import com.davfx.ninio.core.SendCallback;
 import com.davfx.ninio.core.UdpSocket;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
 import com.davfx.ninio.util.ConfigUtils;
-import com.davfx.ninio.util.MemoryCache;
 import com.google.common.collect.ImmutableList;
 import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+
+import static com.davfx.ninio.snmp.AuthCache.AUTH_ENGINES_CACHE_DURATION;
 
 public final class SnmpClient implements SnmpConnecter {
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnmpClient.class);
 
 	private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(SnmpClient.class.getPackage().getName());
 
-	public static final int DEFAULT_PORT = 161;
-	public static final int DEFAULT_TRAP_PORT = 162;
+	static final int DEFAULT_PORT = 161;
 
-	private static final int BULK_SIZE = CONFIG.getInt("bulkSize");
-	private static final double AUTH_ENGINES_CACHE_DURATION = ConfigUtils.getDuration(CONFIG, "auth.cache");
+	static final int DEFAULT_TRAP_PORT = 162;
+
+	static final int BULK_SIZE = CONFIG.getInt("bulkSize");
 
 	public static interface Builder extends NinioBuilder<SnmpConnecter> {
 		@Deprecated
@@ -45,7 +43,7 @@ public final class SnmpClient implements SnmpConnecter {
 		Builder with(NinioBuilder<Connecter> connecterFactory);
 	}
 	
-	public static Builder builder() {
+	static Builder builder() {
 		return new Builder() {
 			private NinioBuilder<Connecter> connecterFactory = UdpSocket.builder();
 			
@@ -68,81 +66,20 @@ public final class SnmpClient implements SnmpConnecter {
 		};
 	}
 	
-	private static final class EncryptionEngineKey {
-		public final String authDigestAlgorithm;
-		public final String privEncryptionAlgorithm;
-		
-		public EncryptionEngineKey(String authDigestAlgorithm, String privEncryptionAlgorithm) {
-			this.authDigestAlgorithm = authDigestAlgorithm;
-			this.privEncryptionAlgorithm = privEncryptionAlgorithm;
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(authDigestAlgorithm, privEncryptionAlgorithm);
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (!(obj instanceof EncryptionEngineKey)) {
-				return false;
-			}
-			EncryptionEngineKey other = (EncryptionEngineKey) obj;
-			return Objects.equals(authDigestAlgorithm, other.authDigestAlgorithm)
-				&& Objects.equals(privEncryptionAlgorithm, other.privEncryptionAlgorithm);
-		}
-	}
-
-	private static final class AuthRemoteEngineKey {
-		public final Address address;
-		public final Auth auth;
-		
-		public AuthRemoteEngineKey(Address address, Auth auth) {
-			this.address = address;
-			this.auth = auth;
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(address, auth);
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (!(obj instanceof AuthRemoteEngineKey)) {
-				return false;
-			}
-			AuthRemoteEngineKey other = (AuthRemoteEngineKey) obj;
-			return Objects.equals(address, other.address)
-				&& Objects.equals(auth, other.auth);
-		}
-	}
-
 	private final Executor executor;
+
 	private final Connecter connecter;
 	
 	private final InstanceMapper instanceMapper;
 
 	private final RequestIdProvider requestIdProvider = new RequestIdProvider();
-	private final MemoryCache<Address, Auth> auths = MemoryCache.<Address, Auth> builder().expireAfterAccess(AUTH_ENGINES_CACHE_DURATION).build();
-	private final MemoryCache<AuthRemoteEngineKey, AuthRemoteEnginePendingRequestManager> authRemoteEngines = MemoryCache.<AuthRemoteEngineKey, AuthRemoteEnginePendingRequestManager> builder().expireAfterAccess(AUTH_ENGINES_CACHE_DURATION).build();
-	private final MemoryCache<EncryptionEngineKey, EncryptionEngine> encryptionEngines = MemoryCache.<EncryptionEngineKey, EncryptionEngine> builder().expireAfterAccess(AUTH_ENGINES_CACHE_DURATION).build();
+
+	private final AuthCache authCache;
 
 	private SnmpClient(Executor executor, Connecter connecter) {
 		this.executor = executor;
 		this.connecter = connecter;
+		this.authCache = AuthCache.get();
 		instanceMapper = new InstanceMapper(requestIdProvider);
 	}
 	
@@ -216,26 +153,26 @@ public final class SnmpClient implements SnmpConnecter {
 
 						AuthRemoteEnginePendingRequestManager authRemoteEnginePendingRequestManager = null;
 						if (auth != null) {
-							Auth previousAuth = auths.get(a);
+							Auth previousAuth = authCache.auths.getIfPresent(a);
 							if (previousAuth != null) {
 								if (!previousAuth.equals(auth)) {
 									LOGGER.debug("Auth changed ({} -> {}) for {}", previousAuth, auth, a);
 								}
 							}
-							auths.put(a, auth);
+							authCache.auths.put(a, auth);
 							
 							EncryptionEngineKey encryptionEngineKey = new EncryptionEngineKey(auth.authDigestAlgorithm, auth.privEncryptionAlgorithm);
-							EncryptionEngine encryptionEngine = encryptionEngines.get(encryptionEngineKey);
+							EncryptionEngine encryptionEngine = authCache.encryptionEngines.getIfPresent(encryptionEngineKey);
 							if (encryptionEngine == null) {
 								encryptionEngine = new EncryptionEngine(auth.authDigestAlgorithm, auth.privEncryptionAlgorithm, AUTH_ENGINES_CACHE_DURATION);
-								encryptionEngines.put(encryptionEngineKey, encryptionEngine);
+								authCache.encryptionEngines.put(encryptionEngineKey, encryptionEngine);
 							}
 
 							AuthRemoteEngineKey authRemoteEngineKey = new AuthRemoteEngineKey(a, auth);
-							authRemoteEnginePendingRequestManager = authRemoteEngines.get(authRemoteEngineKey);
+							authRemoteEnginePendingRequestManager = authCache.authRemoteEngines.getIfPresent(authRemoteEngineKey);
 							if (authRemoteEnginePendingRequestManager == null) {
 								authRemoteEnginePendingRequestManager = new AuthRemoteEnginePendingRequestManager(auth, encryptionEngine);
-								authRemoteEngines.put(authRemoteEngineKey, authRemoteEnginePendingRequestManager);
+								authCache.authRemoteEngines.put(authRemoteEngineKey, authRemoteEnginePendingRequestManager);
 
 								authRemoteEnginePendingRequestManager.discoverIfNecessary(a, connecter);
 							}
@@ -276,14 +213,14 @@ public final class SnmpClient implements SnmpConnecter {
 						int errorIndex;
 						Iterable<SnmpResult> results;
 
-						Auth auth = auths.get(address);
+						Auth auth = authCache.auths.getIfPresent(address);
 
 						AuthRemoteEnginePendingRequestManager authRemoteEnginePendingRequestManager;
 						if (auth == null) {
 							authRemoteEnginePendingRequestManager = null;
 						} else {
 							AuthRemoteEngineKey authRemoteEngineKey = new AuthRemoteEngineKey(address, auth);
-							authRemoteEnginePendingRequestManager = authRemoteEngines.get(authRemoteEngineKey);
+							authRemoteEnginePendingRequestManager = authCache.authRemoteEngines.getIfPresent(authRemoteEngineKey);
 						}
 
 						boolean ready;
@@ -364,141 +301,6 @@ public final class SnmpClient implements SnmpConnecter {
 		});
 		
 		connecter.close();
-	}
-	
-	private static final class AuthRemoteEnginePendingRequestManager {
-		public static final class PendingRequest {
-			public final SnmpCallType request;
-			public final int instanceId;
-			public final Oid oid;
-			public final String contextName;
-//			public final Iterable<SnmpResult> trap;
-			public final SendCallback sendCallback;
-
-			public PendingRequest(SnmpCallType request, int instanceId, Oid oid, String contextName, /*Iterable<SnmpResult> trap, */SendCallback sendCallback) {
-				this.request = request;
-				this.instanceId = instanceId;
-				this.oid = oid;
-				this.contextName = contextName;
-//				this.trap = trap;
-				this.sendCallback = sendCallback;
-			}
-		}
-		
-		public final AuthRemoteEngine engine;
-		public final List<PendingRequest> pendingRequests = new LinkedList<>();
-		
-		public AuthRemoteEnginePendingRequestManager(Auth auth, EncryptionEngine encryptionEngine) {
-			engine = new AuthRemoteEngine(auth, encryptionEngine);
-		}
-		
-		public boolean isReady() {
-			return engine.isValid();
-		}
-		
-		public void reset() {
-			engine.reset();
-		}
-		
-		public void discoverIfNecessary(Address address, Connecter connector) {
-			if (!engine.isValid()) {
-				Version3PacketBuilder builder = Version3PacketBuilder.get(engine, null, RequestIdProvider.IGNORE_ID, null);
-				ByteBuffer b = builder.getBuffer();
-				LOGGER.trace("Writing discover GET v3: #{}, packet size = {}", RequestIdProvider.IGNORE_ID, b.remaining());
-				connector.send(address, b, new SendCallback() {
-					@Override
-					public void sent() {
-					}
-					@Override
-					public void failed(IOException ioe) {
-						IOException e = new IOException("Failed to send discover packet", ioe);
-						for (PendingRequest r : pendingRequests) {
-							r.sendCallback.failed(e);
-						}
-						pendingRequests.clear();
-					}
-				});
-			}
-		}
-		
-		public void registerPendingRequest(PendingRequest r) {
-			pendingRequests.add(r);
-		}
-		public void clearPendingRequests() {
-			pendingRequests.clear();
-		}
-		
-		public void sendPendingRequestsIfReady(Address address, Connecter connector) {
-			if (!engine.isValid()) {
-				return;
-			}
-			
-			for (PendingRequest r : pendingRequests) {
-				switch (r.request) {
-					case GET: {
-						Version3PacketBuilder builder = Version3PacketBuilder.get(engine, r.contextName, r.instanceId, r.oid);
-						ByteBuffer b = builder.getBuffer();
-						LOGGER.trace("Writing GET v3: {} #{}, packet size = {}", r.oid, r.instanceId, b.remaining());
-						connector.send(address, b, r.sendCallback);
-						break;
-					}
-					case GETNEXT: {
-						Version3PacketBuilder builder = Version3PacketBuilder.getNext(engine, r.contextName, r.instanceId, r.oid);
-						ByteBuffer b = builder.getBuffer();
-						LOGGER.trace("Writing GETNEXT v3: {} #{}, packet size = {}", r.oid, r.instanceId, b.remaining());
-						connector.send(address, b, r.sendCallback);
-						break;
-					}
-					case GETBULK: {
-						Version3PacketBuilder builder = Version3PacketBuilder.getBulk(engine, r.contextName, r.instanceId, r.oid, BULK_SIZE);
-						ByteBuffer b = builder.getBuffer();
-						LOGGER.trace("Writing GETBULK v3: {} #{}, packet size = {}", r.oid, r.instanceId, b.remaining());
-						connector.send(address, b, r.sendCallback);
-						break;
-					}
-					case TRAP: {
-						LOGGER.error("No TRAP possible in v3: {} #{}", r.oid, r.instanceId);
-/*
-						Version3PacketBuilder builder = Version3PacketBuilder.trap(engine, r.instanceId, r.oid, r.trap);
-						ByteBuffer b = builder.getBuffer();
-						LOGGER.trace("Writing TRAP v3: {} #{}, packet size = {}", r.oid, r.instanceId, b.remaining());
-						connector.send(address, b, r.sendCallback);
-*/
-						break;
-					}
-					default:
-						break;
-				}
-			}
-			pendingRequests.clear();
-		}
-	}
-	
-	private static final class RequestIdProvider {
-
-		private static final Random RANDOM = new SecureRandom();
-
-		private static final int MIN_ID = 1_000;
-		private static final int MAX_ID = 2_043_088_696; // Let's do as snmpwalk is doing
-		public static final int IGNORE_ID = MAX_ID;
-		
-		private static int NEXT = MAX_ID;
-		
-		private static final Object LOCK = new Object();
-
-		public RequestIdProvider() {
-		}
-		
-		public int get() {
-			synchronized (LOCK) {
-				if (NEXT == MAX_ID) {
-					NEXT = MIN_ID + RANDOM.nextInt(MAX_ID - MIN_ID);
-				}
-				int k = NEXT;
-				NEXT++;
-				return k;
-			}
-		}
 	}
 	
 	private static final class InstanceMapper {

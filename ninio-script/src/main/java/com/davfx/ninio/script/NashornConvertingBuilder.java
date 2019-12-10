@@ -1,14 +1,15 @@
 package com.davfx.ninio.script;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 final class NashornConvertingBuilder implements ConvertingBuilder {
 	
@@ -248,6 +249,11 @@ final class NashornConvertingBuilder implements ConvertingBuilder {
 					return null;
 				}
 			}), new Predicate<ScriptElement>() {
+				@Override
+				public boolean test(@Nullable ScriptElement input) {
+					return (input != null);
+				}
+
 				@Override
 				public boolean apply(ScriptElement input) {
 					return (input != null);
