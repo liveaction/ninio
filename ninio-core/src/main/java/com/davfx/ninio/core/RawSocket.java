@@ -1,16 +1,15 @@
 package com.davfx.ninio.core;
 
+import com.davfx.ninio.util.SerialExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.ProtocolFamily;
 import java.net.StandardProtocolFamily;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.davfx.ninio.util.SerialExecutor;
 
 public final class RawSocket implements Connecter {
 	
@@ -64,6 +63,8 @@ public final class RawSocket implements Connecter {
 	
 	private final Executor loop = new SerialExecutor(RawSocket.class);
 
+	private final RequestTracker outTracker;
+	private final RequestTracker inTracker;
 	private NativeRawSocket socket = null;
 	private boolean closed = false;
 	
@@ -74,6 +75,10 @@ public final class RawSocket implements Connecter {
 		this.family = family;
 		this.protocol = protocol;
 		this.bindAddress = bindAddress;
+		String prefix = "RAW";
+		outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
+		inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
+		RequestTrackerManager.instance().relation("lost", new RequestTrackerManager.PercentRelation(outTracker, inTracker), prefix);
 	}
 	
 	@Override
@@ -165,7 +170,8 @@ public final class RawSocket implements Connecter {
 						
 						Address a = new Address(srcAddress, 0);
 						LOGGER.debug("Received raw packet: {} bytes from: {}", r, a);
-
+						inTracker.track(Address.ipToString(srcAddress), addr ->
+								String.format("Received raw request from %s ", addr));
 						callback.received(a, b);
 					} catch (Exception e) {
 						LOGGER.error("Error while reading", e);
@@ -200,6 +206,8 @@ public final class RawSocket implements Connecter {
 				if (r == 0) {
 					throw new IOException("Error writing to: " + address);
 				}
+				outTracker.track(Address.ipToString(address.ip), addr ->
+						String.format("Sending raw request to %s ", addr));
 				buffer.position(buffer.position() + r);
 			}
 
