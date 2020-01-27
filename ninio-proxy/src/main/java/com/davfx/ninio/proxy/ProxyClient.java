@@ -397,7 +397,7 @@ public final class ProxyClient implements ProxyProvider {
 		public InnerConnector(ProxyHeader header, final Address connectAddress) {
 			this.header = header;
 			this.connectAddress = connectAddress;
-			
+
 			innerConnection = new InnerConnection();
 			String prefix = "proxy-client";
 			inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
@@ -585,7 +585,7 @@ public final class ProxyClient implements ProxyProvider {
 												InnerConnection receivedInnerConnection = connections.get(readConnectionId);
 												if (receivedInnerConnection != null) {
 													inTracker.track(Address.ipToString(readIp), addr ->
-															String.format("Received from %s via Proxy %s ", addr, connectAddress));
+															String.format("Received from %s via Proxy", addr));
 													receivedInnerConnection.connection.received(new Address(readIp, readPort), ByteBuffer.wrap(r));
 												}
 												readConnectionId = -1;
@@ -686,8 +686,6 @@ public final class ProxyClient implements ProxyProvider {
 						return;
 					}
 
-					outTracker.track(Address.ipToString(sendAddress.ip), addr ->
-							String.format("Sending to %s via Proxy %s ", addr, connectAddress));
 					if (sendAddress == null) {
 						// LOGGER.debug("-->SEND_WITHOUT_ADDRESS [{} bytes]", sendBuffer.remaining());
 						ByteBuffer b = ByteBuffer.allocate(1 + Ints.BYTES + Ints.BYTES + sendBuffer.remaining());
@@ -698,6 +696,8 @@ public final class ProxyClient implements ProxyProvider {
 						b.flip();
 						proxyConnector.send(null, b, callback);
 					} else {
+						outTracker.track(Address.ipToString(sendAddress.ip), addr ->
+								String.format("Sending to %s via Proxy ", addr));
 						// LOGGER.debug("-->SEND_WITH_ADDRESS {} [{} bytes]", sendAddress, sendBuffer.remaining());
 						ByteBuffer b = ByteBuffer.allocate(1 + Ints.BYTES + Ints.BYTES + sendAddress.ip.length + Ints.BYTES + Ints.BYTES + sendBuffer.remaining());
 						b.put((byte) ProxyCommons.Commands.SEND_WITH_ADDRESS);

@@ -22,7 +22,7 @@ public final class RequestTracker {
     public void track(String address, Function<String, String> logAction) {
         count.increment();
         if (addressToFollow.contains(address)) {
-            LOGGER.info("[TRACKING] [{}] {}", name, logAction.apply(address));
+            LOGGER.info("[TRACKING] {} {}", name, logAction.apply(address));
         }
     }
 
