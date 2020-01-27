@@ -1,5 +1,13 @@
 package com.davfx.ninio.core;
 
+import com.davfx.ninio.core.dependencies.Dependencies;
+import com.davfx.ninio.util.ConfigUtils;
+import com.davfx.ninio.util.DateUtils;
+import com.davfx.ninio.util.Wait;
+import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -11,25 +19,11 @@ import java.nio.channels.SelectionKey;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.davfx.ninio.core.dependencies.Dependencies;
-import com.davfx.ninio.util.ClassThreadFactory;
-import com.davfx.ninio.util.ConfigUtils;
-import com.davfx.ninio.util.DateUtils;
-import com.davfx.ninio.util.Wait;
-import com.typesafe.config.Config;
 
 // MacOS X : sudo sysctl -w net.inet.udp.recvspace=8000000
 // Linux: sysctl -w net.core.rmem_max=8000000
 public final class UdpSocket implements Connecter {
-	
+
 	public static final class Test {
 		public static final class Send {
 			private static final Logger INNER_LOGGER = LoggerFactory.getLogger(Receive.class);
@@ -122,68 +116,6 @@ public final class UdpSocket implements Connecter {
 	private static final long SOCKET_WRITE_BUFFER_SIZE = CONFIG.getBytes("udp.socket.write").longValue();
 	private static final long SOCKET_READ_BUFFER_SIZE = CONFIG.getBytes("udp.socket.read").longValue();
 
-	private static final double SUPERVISION_DISPLAY = ConfigUtils.getDuration(CONFIG, "supervision.udp.display");
-	private static final double SUPERVISION_CLEAR = ConfigUtils.getDuration(CONFIG, "supervision.udp.clear");
-
-	private static final class Supervision {
-		private static double floorTime(double now, double period) {
-	    	double precision = 1000d;
-	    	long t = (long) (now * precision);
-	    	long d = (long) (period * precision);
-	    	return (t - (t % d)) / precision;
-		}
-		
-		private static String percent(long out, long in) {
-			return String.format("%.2f", ((double) (out - in)) * 100d / ((double) out));
-		}
-	
-		private final AtomicLong inPackets = new AtomicLong(0L);
-		private final AtomicLong outPackets = new AtomicLong(0L);
-		private final AtomicLong inBytes = new AtomicLong(0L);
-		private final AtomicLong outBytes = new AtomicLong(0L);
-		
-		public Supervision() {
-			double now = DateUtils.now();
-			double startDisplay = SUPERVISION_DISPLAY - (now - floorTime(now, SUPERVISION_DISPLAY));
-			double startClear = SUPERVISION_CLEAR - (now - floorTime(now, SUPERVISION_CLEAR));
-			
-			ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ClassThreadFactory(UdpSocket.Supervision.class, true));
-
-			executor.scheduleAtFixedRate(new Runnable() {
-				@Override
-				public void run() {
-					long ip = inPackets.get();
-					long ib = inBytes.get();
-					long op = outPackets.get();
-					long ob = outBytes.get();
-					LOGGER.debug("[UDP Supervision] out = {} ({} Kb), in = {} ({} Kb), lost = {} %", op, ob / 1000d, ip, ib / 1000d, percent(op, ip));
-				}
-			}, (long) (startDisplay * 1000d), (long) (SUPERVISION_DISPLAY * 1000d), TimeUnit.MILLISECONDS);
-
-			executor.scheduleAtFixedRate(new Runnable() {
-				@Override
-				public void run() {
-					long ip = inPackets.getAndSet(0L);
-					long ib = inBytes.getAndSet(0L);
-					long op = outPackets.getAndSet(0L);
-					long ob = outBytes.getAndSet(0L);
-					LOGGER.info("[UDP Supervision] (cleared) out = {} ({} Kb), in = {} ({} Kb), lost = {} %", op, ob / 1000d, ip, ib / 1000d, percent(op, ip));
-				}
-			}, (long) (startClear * 1000d), (long) (SUPERVISION_CLEAR * 1000d), TimeUnit.MILLISECONDS);
-		}
-		
-		public void incIn(long bytes) {
-			inPackets.incrementAndGet();
-			inBytes.addAndGet(bytes);
-		}
-		public void incOut(long bytes) {
-			outPackets.incrementAndGet();
-			outBytes.addAndGet(bytes);
-		}
-	}
-	
-	private static final Supervision SUPERVISION = (SUPERVISION_DISPLAY > 0d) ? new Supervision() : null;
-	
 	public static interface Builder extends NinioBuilder<Connecter> {
 		Builder with(ByteBufferAllocator byteBufferAllocator);
 		Builder bind(Address bindAddress);
@@ -236,11 +168,18 @@ public final class UdpSocket implements Connecter {
 
 	private Connection connectCallback = null;
 	private boolean closed = false;
+
+	private final RequestTracker inTracker;
+	private final RequestTracker outTracker;
 	
 	public UdpSocket(Queue queue, ByteBufferAllocator byteBufferAllocator, Address bindAddress) {
 		this.queue = queue;
 		this.byteBufferAllocator = byteBufferAllocator;
 		this.bindAddress = bindAddress;
+		String prefix = "UDP";
+		inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
+		outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
+		RequestTrackerManager.instance().relation("lost", new RequestTrackerManager.PercentRelation(outTracker, inTracker), prefix);
 	}
 	
 	@Override
@@ -307,10 +246,8 @@ public final class UdpSocket implements Connecter {
 	
 										readBuffer.flip();
 										Address a = new Address(from.getAddress().getAddress(), from.getPort());
-										
-										if (SUPERVISION != null) {
-											SUPERVISION.incIn(readBuffer.remaining());
-										}
+
+										inTracker.track(from.getAddress().getHostAddress(), addr -> String.format("Received request from %s", addr));
 										long start = System.nanoTime();
 										while((start + 100000L) >= System.nanoTime());
 										callback.received(a, readBuffer);
@@ -365,10 +302,7 @@ public final class UdpSocket implements Connecter {
 													if (toWrite.buffer.hasRemaining()) {
 														throw new IOException("Packet was not entirely written");
 													}
-	
-													if (SUPERVISION != null) {
-														SUPERVISION.incOut(size);
-													}
+
 												} catch (IOException e) {
 													LOGGER.trace("Write failed", e);
 													//%% disconnect(channel, selectionKey, callback);
@@ -399,11 +333,9 @@ public final class UdpSocket implements Connecter {
 													if (toWrite.buffer.hasRemaining()) {
 														throw new IOException("Packet was not entirely written");
 													}
-	
-													if (SUPERVISION != null) {
-														SUPERVISION.incOut(size);
-													}
-	
+
+													outTracker.track(a.getAddress().getHostAddress(), addr -> String.format("Sending request to %s", addr));
+
 													toWriteLength -= size; //%% - toWrite.buffer.remaining();
 												} catch (IOException e) {
 													LOGGER.trace("Write failed", e);

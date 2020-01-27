@@ -1,12 +1,6 @@
 package com.davfx.ninio.ping;
 
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.NinioBuilder;
-import com.davfx.ninio.core.NinioProvider;
-import com.davfx.ninio.core.Nop;
-import com.davfx.ninio.core.RawSocket;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.string.Identifiers;
 import com.davfx.ninio.util.Mutable;
 import org.slf4j.Logger;
@@ -24,7 +18,7 @@ public final class PingClient implements PingConnecter {
 	
 	private static final int ICMP_PROTOCOL = 1;
 	private static final long ID_LIMIT = Integer.MAX_VALUE - 1; // Last one is reserved for TERMINATE packet on RawSocket, sorry...
-	
+
 	public static interface Builder extends NinioBuilder<PingConnecter> {
 		@Deprecated
 		Builder with(Executor executor);
@@ -64,11 +58,17 @@ public final class PingClient implements PingConnecter {
 	private boolean closed = false;
 	
 	private final String clientIdentifier;
+	private final RequestTracker outTracker;
+	private final RequestTracker inTracker;
 
 	public PingClient(Executor executor, Connecter connecter) {
 		this.executor = executor;
 		this.connecter = connecter;
 		clientIdentifier = Identifiers.identifier();
+		String prefix = "PING";
+		outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
+		inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
+		RequestTrackerManager.instance().relation("lost", new RequestTrackerManager.PercentRelation(outTracker, inTracker), prefix);
 	}
 	
 	private static void closeSendCallbacks(Map<Address, PingReceiver> receivers) {
@@ -128,6 +128,8 @@ public final class PingClient implements PingConnecter {
 							LOGGER.trace("@{} Transmitted ICMP packet [{}/{}] from {} (ID {}): {} ns", clientIdentifier, type, code, address, id.port, deltaNano);
 						}
 
+						inTracker.track(Address.ipToString(address.ip), addr ->
+								String.format("Received ping from %s ", addr));
 						r.received(delta);
 					}
 				});
@@ -231,7 +233,10 @@ public final class PingClient implements PingConnecter {
 				if (LOGGER.isTraceEnabled()) {
 					LOGGER.trace("@{} Sending ICMP packet to {} (ID {})", clientIdentifier, Address.ipToString(ip), id.value.port);
 				}
-				connecter.send(new Address(ip, 0), b, new Nop());
+				Address address = new Address(ip, 0);
+				outTracker.track(Address.ipToString(address.ip), addr ->
+						String.format("Sending ping to %s ", addr));
+				connecter.send(address, b, new Nop());
 			}
 		});
 		
