@@ -1,11 +1,5 @@
 package com.davfx.ninio.http;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-
 import com.davfx.ninio.core.Disconnectable;
 import com.davfx.ninio.core.Ninio;
 import com.davfx.ninio.http.service.Annotated;
@@ -17,11 +11,25 @@ import com.davfx.ninio.http.service.annotations.Route;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import static com.davfx.ninio.http.TestUtils.findAvailablePort;
 
 public class HttpServiceConvertersTest {
 	
 	static {
 		System.setProperty("http.keepAlive", "false");
+	}
+	private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
 	}
 	
 	@Path("/get")
@@ -34,8 +42,8 @@ public class HttpServiceConvertersTest {
 	@Test
 	public void testGetWithQueryParameter() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.ControllerVisitor(TestGetWithQueryParameterController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=world")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
 			}
 		}
 	}
@@ -50,8 +58,8 @@ public class HttpServiceConvertersTest {
 	@Test
 	public void testGetWithInteger() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.ControllerVisitor(TestGetWithIntegerController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=42")).isEqualTo("text/plain; charset=UTF-8/GET hello:" + (42 + 666) + "\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.ControllerVisitor(TestGetWithIntegerController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=42")).isEqualTo("text/plain; charset=UTF-8/GET hello:" + (42 + 666) + "\n");
 			}
 		}
 	}
@@ -66,8 +74,8 @@ public class HttpServiceConvertersTest {
 	@Test
 	public void testGetWithInt() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.ControllerVisitor(TestGetWithIntController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=42")).isEqualTo("text/plain; charset=UTF-8/GET hello:" + (42 + 666) + "\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.ControllerVisitor(TestGetWithIntController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=42")).isEqualTo("text/plain; charset=UTF-8/GET hello:" + (42 + 666) + "\n");
 			}
 		}
 	}
@@ -91,8 +99,8 @@ public class HttpServiceConvertersTest {
 	@Test
 	public void testGetWithAll() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.ControllerVisitor(TestGetWithAllController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?boolean=true&byte=1&short=2&int=3&long=4&float=5.5&double=6.6&char=c")).isEqualTo("text/plain; charset=UTF-8/GET hello:true 1 2 3 4 5.5 6.6 c\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.ControllerVisitor(TestGetWithAllController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?boolean=true&byte=1&short=2&int=3&long=4&float=5.5&double=6.6&char=c")).isEqualTo("text/plain; charset=UTF-8/GET hello:true 1 2 3 4 5.5 6.6 c\n");
 			}
 		}
 	}
@@ -126,28 +134,28 @@ public class HttpServiceConvertersTest {
 	@Test
 	public void testGetWithConverter() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.Visitor() {
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.Visitor() {
 				@Override
 				public void visit(Annotated.Builder builder) {
 					builder.parameters(A.class, new AConverter());
 					builder.register(null, TestGetWithConverterController.class);
 				}
 			})) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?p=aaa")).isEqualTo("text/plain; charset=UTF-8/GET hello:_aaa_\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?p=aaa")).isEqualTo("text/plain; charset=UTF-8/GET hello:_aaa_\n");
 			}
 		}
 	}
 	@Test
 	public void testGetWithClazzConverter() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.Visitor() {
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.Visitor() {
 				@Override
 				public void visit(Annotated.Builder builder) {
 					builder.parameters(A.class);
 					builder.register(null, TestGetWithConverterController.class);
 				}
 			})) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?p=aaa")).isEqualTo("text/plain; charset=UTF-8/GET hello:_aaa_\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?p=aaa")).isEqualTo("text/plain; charset=UTF-8/GET hello:_aaa_\n");
 			}
 		}
 	}
@@ -162,7 +170,7 @@ public class HttpServiceConvertersTest {
 	@Test
 	public void testGetWithListConverter() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.Visitor() {
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.Visitor() {
 				@Override
 				public void visit(Annotated.Builder builder) {
 					builder.parameters(new TypeToken<List<A>>() {
@@ -180,7 +188,7 @@ public class HttpServiceConvertersTest {
 					builder.register(null, TestGetWithListConverterController.class);
 				}
 			})) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?p=['a','a','a']")).isEqualTo("text/plain; charset=UTF-8/GET hello:[_a_, _a_, _a_]\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?p=['a','a','a']")).isEqualTo("text/plain; charset=UTF-8/GET hello:[_a_, _a_, _a_]\n");
 			}
 		}
 	}
@@ -208,7 +216,7 @@ public class HttpServiceConvertersTest {
 	@Test
 	public void testGetWithTwoListConverter() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.Visitor() {
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.Visitor() {
 				@Override
 				public void visit(Annotated.Builder builder) {
 					builder.parameters(new TypeToken<List<A>>() {
@@ -238,7 +246,7 @@ public class HttpServiceConvertersTest {
 					builder.register(null, TestGetWithTwoListConverterController.class);
 				}
 			})) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?p=['a','a','a']&q=['b']")).isEqualTo("text/plain; charset=UTF-8/GET hello:[_a_, _a_, _a_][^b^]\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?p=['a','a','a']&q=['b']")).isEqualTo("text/plain; charset=UTF-8/GET hello:[_a_, _a_, _a_][^b^]\n");
 			}
 		}
 	}
