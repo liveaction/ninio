@@ -77,6 +77,101 @@ public class SnmpTest {
 			waitServer.waitFor();
 		}
 	}
+
+    //    @Test
+//    public void testDESNinio() throws UnknownHostException, InterruptedException {
+//        try (Ninio ninio = Ninio.create()) {
+//            try (SnmpConnecter snmpClient = SnmpTimeout.wrap(20d, ninio.create(SnmpClient.builder().with(UdpSocket.builder())))) {
+//                snmpClient.connect(new SnmpConnection() {
+//                    @Override
+//                    public void failed(IOException ioe) {
+//                    }
+//
+//                    @Override
+//                    public void connected(Address address) {
+//                    }
+//
+//                    @Override
+//                    public void closed() {
+//                    }
+//                });
+//
+//                final CountDownLatch latch = new CountDownLatch(1);
+//                final AtomicBoolean res = new AtomicBoolean(false);
+//                snmpClient.request().auth(new AuthRemoteSpecification("usr-md5-des", "authkey1", "MD5", "privkey1", "DES", ""))
+//                        .build(new Address(InetAddress.getByName("10.3.33.24").getAddress(), 9223), new Oid("1.3.6.1.2.1.2.2.1.2"))
+//                        .call(SnmpCallType.GETBULK, new SnmpReceiver() {
+//                            @Override
+//                            public void received(SnmpResult result) {
+//                                res.set(true);
+//                                System.out.println("success -> " + result);
+//                            }
+//
+//                            @Override
+//                            public void finished() {
+//                                latch.countDown();
+//                            }
+//
+//                            @Override
+//                            public void failed(IOException ioe) {
+//                                res.set(false);
+//                                latch.countDown();
+//                                ioe.printStackTrace();
+//                            }
+//                        });
+//                latch.await();
+//                Assertions.assertThat(res.get()).isTrue();
+//            }
+//        }
+//    }
+//
+//    static {
+//        LogFactory.setLogFactory(new ConsoleLogFactory());
+//        ConsoleLogAdapter.setDebugEnabled(true);
+//    }
+//
+//    @Test
+//    public void testDESSnmp4j() throws Exception {
+//
+//        org.snmp4j.smi.Address targetAddress = GenericAddress.parse("10.3.33.24/9223");
+//        TransportMapping transport = new DefaultUdpTransportMapping();
+//        Snmp snmp = new Snmp(transport);
+//        SecurityProtocols instance = SecurityProtocols.getInstance();
+//        instance.addAuthenticationProtocol(new AuthSHA());
+//        instance.addAuthenticationProtocol(new AuthMD5());
+//        USM usm = new USM(instance,
+//                new OctetString(MPv3.createLocalEngineID()), 3);
+//        SecurityModels.getInstance().addSecurityModel(usm);
+//        transport.listen();
+//        // add user to the USM
+//        snmp.getUSM().addUser(new UsmUser(new OctetString("usr-md5-des"),
+//                        AuthMD5.ID,
+//                        new OctetString("authkey1"),
+//                        PrivDES.ID,
+//                        new OctetString("privkey1")));
+//        // create the target
+//        UserTarget target = new UserTarget();
+//        target.setAddress(targetAddress);
+//        target.setRetries(1);
+//        target.setTimeout(5000);
+//        target.setVersion(SnmpConstants.version3);
+//        target.setSecurityLevel(SecurityLevel.AUTH_PRIV);
+//        target.setSecurityName(new OctetString("usr-md5-des"));
+//
+//        // create the PDU
+//        PDU pdu = new ScopedPDU();
+//        pdu.add(new VariableBinding(new OID("1.3.6.1.2.1.2.2.1.2.1")));
+//        pdu.setType(PDU.GET);
+//        pdu.setMaxRepetitions(10);
+//
+//        // send the PDU
+//        ResponseEvent response = snmp.send(pdu, target);
+//        // extract the response PDU (could be null if timed out)
+//        PDU responsePDU = response.getResponse();
+//        System.out.println(responsePDU);
+//        // extract the address used by the agent to send the response:
+//        org.snmp4j.smi.Address peerAddress = response.getPeerAddress();
+//    }
 	
 	private static List<SnmpResult> call(SnmpConnecter snmpClient, Address a, Oid oid, SnmpCallType snmpCallType) throws IOException {
 		final Lock<List<SnmpResult>, IOException> lock = new Lock<>();
