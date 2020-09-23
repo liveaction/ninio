@@ -1,14 +1,5 @@
 package com.davfx.ninio.ping;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Connecter;
 import com.davfx.ninio.core.Connection;
@@ -18,6 +9,14 @@ import com.davfx.ninio.core.Nop;
 import com.davfx.ninio.core.RawSocket;
 import com.davfx.ninio.string.Identifiers;
 import com.davfx.ninio.util.Mutable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Executor;
 
 public final class PingClient implements PingConnecter {
 	
@@ -58,7 +57,7 @@ public final class PingClient implements PingConnecter {
 	
 	private final Executor executor;
 	private final Connecter connecter;
-	private long nextId = 0L;
+	private long nextId =  65436;
 
 	private final Map<Address, PingReceiver> receivers = new HashMap<>();
 	
@@ -197,7 +196,7 @@ public final class PingClient implements PingConnecter {
 				id.value = new Address(ip, (int) (nextId & 0xFFFFFFFFL));
 				nextId++;
 				if (nextId == ID_LIMIT) {
-					nextId = 0L;
+					nextId =  65436;
 				}
 				receivers.put(id.value, callback);
 
