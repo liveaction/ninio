@@ -260,6 +260,7 @@ public final class TcpdumpSocket implements Connecter {
 		File dir = new File(".");
 
 		List<String> toExec = new LinkedList<String>();
+		toExec.add("sudo");
 		toExec.add(TCPDUMP_COMMAND);
 		//%% toExec.add("-w");
 		//%% toExec.add("-"); // Try with /dev/stdout
