@@ -1,13 +1,5 @@
 package com.davfx.ninio.http;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Disconnectable;
 import com.davfx.ninio.core.InMemoryBuffers;
@@ -24,6 +16,16 @@ import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMultimap;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.http.TestUtils.findAvailablePort;
 
 public class HttpGetTest {
 	
@@ -32,6 +34,13 @@ public class HttpGetTest {
 	private static final String LOCALHOST = "localhost";//127.0.0.1";
 
 	private static final int LIMIT = 2;
+
+	private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
+	}
 	
 	@SuppressWarnings("unused")
 	private static void example() {
@@ -292,7 +301,6 @@ public class HttpGetTest {
 	
 	@Test
 	public void testSimpleGet() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			try (Disconnectable tcp = server(ninio, port)) {
@@ -305,7 +313,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testSimplePost() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			Disconnectable tcp = server(ninio, port);
@@ -321,7 +328,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testSimpleGetConnectionClosed() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			Disconnectable tcp = server(ninio, port);
@@ -337,7 +343,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testDoubleGet() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			Disconnectable tcp = server(ninio, port);
@@ -354,7 +359,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testDoublePost() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			Disconnectable tcp = server(ninio, port);
@@ -371,7 +375,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testDoubleGetConnectionClosed() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			Disconnectable tcp = server(ninio, port);
@@ -388,7 +391,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testGetServerRestarted() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			try (DnsConnecter dns = ninio.create(DnsClient.builder()); HttpConnecter client = ninio.create(HttpClient.builder().with(dns))) {
@@ -411,7 +413,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testGetServerRestartedConnectionClose() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			try (DnsConnecter dns = ninio.create(DnsClient.builder()); HttpConnecter client = ninio.create(HttpClient.builder().with(dns))) {
@@ -434,7 +435,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testPostServerRestarted() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			try (DnsConnecter dns = ninio.create(DnsClient.builder()); HttpConnecter client = ninio.create(HttpClient.builder().with(dns))) {
@@ -457,7 +457,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testPostServerRestartedConnectionClose() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			try (DnsConnecter dns = ninio.create(DnsClient.builder()); HttpConnecter client = ninio.create(HttpClient.builder().with(dns))) {
@@ -575,7 +574,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testParallelGet() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			Disconnectable tcp = server(ninio, port);
@@ -595,7 +593,6 @@ public class HttpGetTest {
 	// Check in the log that only one socket is created
 	@Test
 	public void testPipeliningGet() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			Limit limit = new Limit();
 			Disconnectable tcp = server(ninio, port);

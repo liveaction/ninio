@@ -1,13 +1,5 @@
 package com.davfx.ninio.snmp;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Disconnectable;
 import com.davfx.ninio.core.InMemoryCache;
@@ -15,11 +7,28 @@ import com.davfx.ninio.core.Ninio;
 import com.davfx.ninio.core.UdpSocket;
 import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+
+import static com.davfx.ninio.snmp.TestUtil.findAvailablePort;
 
 @Ignore
 public class CacheTest {
 	
 	private static final Oid OID = new Oid("1.1.1");
+
+	private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
+	}
 	
 	@Test
 	public void testWithCache() throws Exception {
@@ -45,7 +54,6 @@ public class CacheTest {
 				}
 			};
 			
-			int port = 8080;
 			final Wait waitServer = new Wait();
 			try (Disconnectable snmpServer = ninio.create(SnmpServer.builder().with(UdpSocket.builder().bind(new Address(Address.LOCALHOST, port)))
 				.handle(new SnmpServerHandler() {

@@ -19,10 +19,12 @@ import static com.davfx.ninio.http.TestUtils.findAvailablePort;
 public class HttpServiceTest {
 
 	private int port;
+	private int routerPort;
 
 	@Before
 	public void setUp() throws Exception {
 		port = findAvailablePort();
+		routerPort = findAvailablePort();
 	}
 
 	@Path("/get")
@@ -255,16 +257,16 @@ public class HttpServiceTest {
 	@Test
 	public void testFilesWithPortRouting() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.routedServer(ninio, 8081, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8081/get/files/index.html")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello</div></body>\n");
+			try (Disconnectable server = TestUtils.routedServer(ninio, routerPort, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+routerPort+"/get/files/index.html")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello</div></body>\n");
 			}
 		}
 	}
 	@Test
 	public void testInsideFilesWithPortRouting() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.routedServer(ninio, 8081, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8081/get/files/in-dir/in-file.html")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello inside</div></body>\n");
+			try (Disconnectable server = TestUtils.routedServer(ninio, routerPort, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+routerPort+"/get/files/in-dir/in-file.html")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello inside</div></body>\n");
 			}
 		}
 	}
@@ -282,24 +284,24 @@ public class HttpServiceTest {
 	@Test
 	public void testRootIndexFilesWithPortRouting() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.routedServer(ninio, 8081, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsIndexController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8081/get")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello</div></body>\n");
+			try (Disconnectable server = TestUtils.routedServer(ninio, routerPort, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsIndexController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+routerPort+"/get")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello</div></body>\n");
 			}
 		}
 	}
 	@Test
 	public void testRootIndexFilesWithPortRoutingDefaultAssets() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.routedServer(ninio, 8081, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsIndexController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8081/files")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello</div></body>\n");
+			try (Disconnectable server = TestUtils.routedServer(ninio, routerPort, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsIndexController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+routerPort+"/files")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello</div></body>\n");
 			}
 		}
 	}
 	@Test
 	public void testInsideRootIndexFilesWithPortRouting() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.routedServer(ninio, 8081, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsIndexController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8081/get/in-dir")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello index</div></body>\n");
+			try (Disconnectable server = TestUtils.routedServer(ninio, routerPort, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterAssetsIndexController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+routerPort+"/get/in-dir")).isEqualTo("text/html; charset=UTF-8/<!doctype html><html><head><meta charset=\"utf-8\" /></head><body><div>Hello index</div></body>\n");
 			}
 		}
 	}
