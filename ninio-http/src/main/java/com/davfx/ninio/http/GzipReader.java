@@ -232,12 +232,14 @@ final class GzipReader implements HttpContentReceiver {
     	}
     	b.flip();
 		b.order(ByteOrder.LITTLE_ENDIAN);
-		if ((b.getInt() & 0xFFFFFFFFL) != crc.getValue()) {
+		int actualCrc = b.getInt();
+		if ((actualCrc & 0xFFFFFFFFL) != crc.getValue()) {
 			ended = true;
 			failing.failed(new IOException("Bad CRC"));
     		return;
 		}
-		if ((b.getInt() & 0xFFFFFFFFL) != inflater.getBytesWritten()) {
+		int actualLength = b.getInt();
+		if ((actualLength & 0xFFFFFFFFL) != inflater.getBytesWritten()) {
 			ended = true;
 			failing.failed(new IOException("Bad length"));
     		return;
