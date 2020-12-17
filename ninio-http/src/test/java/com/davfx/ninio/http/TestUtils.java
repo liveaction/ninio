@@ -1,35 +1,21 @@
 package com.davfx.ninio.http;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.Connected;
-import com.davfx.ninio.core.ConnectingClosingFailing;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.Disconnectable;
-import com.davfx.ninio.core.Listener;
-import com.davfx.ninio.core.Listening;
-import com.davfx.ninio.core.Ninio;
-import com.davfx.ninio.core.RoutingTcpSocketServer;
-import com.davfx.ninio.core.TcpSocket;
-import com.davfx.ninio.core.TcpSocketServer;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.http.service.Annotated;
 import com.davfx.ninio.http.service.Annotated.Builder;
 import com.davfx.ninio.http.service.HttpController;
 import com.davfx.ninio.http.service.HttpService;
 import com.davfx.ninio.util.Wait;
 import com.google.common.base.Charsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-class TestUtils {
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.ServerSocket;
+import java.net.URL;
+
+public class TestUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 	
 	static {
@@ -65,7 +51,7 @@ class TestUtils {
 	}
 	
 	static Disconnectable server(final Ninio ninio, int port, Visitor v) {
-		LOGGER.debug("CREATING ON PORT: {}", port);
+		LOGGER.info("CREATING ON PORT: {}", port);
 		final Annotated.Builder a = Annotated.builder(HttpService.builder());
 		v.visit(a);
 
@@ -100,6 +86,14 @@ class TestUtils {
 				waitForClosing.waitFor();
 			}
 		};
+	}
+
+	public static int findAvailablePort() {
+		try (ServerSocket s = new ServerSocket(0)) {
+			return s.getLocalPort();
+		} catch (IOException e) {
+			throw new RuntimeException("Couldn't find an available port!!");
+		}
 	}
 
 	static Disconnectable routedServer(final Ninio ninio, int routedPort, final int port, Visitor v) {

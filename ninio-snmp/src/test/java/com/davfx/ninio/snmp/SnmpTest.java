@@ -1,15 +1,5 @@
 package com.davfx.ninio.snmp;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.TreeMap;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Disconnectable;
 import com.davfx.ninio.core.InMemoryCache;
@@ -17,11 +7,30 @@ import com.davfx.ninio.core.Ninio;
 import com.davfx.ninio.core.UdpSocket;
 import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeMap;
+
+import static com.davfx.ninio.snmp.TestUtil.findAvailablePort;
 
 public class SnmpTest {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnmpTest.class);
-	
+
+	private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
+	}
+
 	@Test
 	public void test() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
@@ -33,7 +42,6 @@ public class SnmpTest {
 			map.put(new Oid("1.1.3.1"), "val1.1.3.1");
 			map.put(new Oid("1.1.3.2"), "val1.1.3.2");
 			
-			int port = 8080;
 			final Wait waitServer = new Wait();
 			try (Disconnectable snmpServer = ninio.create(SnmpServer.builder().with(UdpSocket.builder().bind(new Address(Address.LOCALHOST, port)))
 					.handle(new FromMapSnmpServerHandler(map, new SnmpServerHandler() {
@@ -206,7 +214,6 @@ public class SnmpTest {
 	@Test
 	public void testTimeout() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			int port = 8080;
 			final Lock<String, IOException> lock = new Lock<>();
 			try (SnmpConnecter snmpClient = SnmpTimeout.wrap(0.5d, ninio.create(SnmpClient.builder().with(UdpSocket.builder())))) {
 				snmpClient.connect(new SnmpConnection() {
@@ -265,7 +272,6 @@ public class SnmpTest {
 				}
 			});
 			
-			int port = 8080;
 			final Wait waitServer = new Wait();
 			try (Disconnectable snmpServer = ninio.create(SnmpServer.builder().with(UdpSocket.builder().bind(new Address(Address.LOCALHOST, port)))
 				.handle(new SnmpServerHandler() {
@@ -355,7 +361,6 @@ public class SnmpTest {
 				}
 			});
 			
-			int port = 8080;
 			final Wait waitServer = new Wait();
 			try (Disconnectable snmpServer = ninio.create(SnmpServer.builder().with(UdpSocket.builder().bind(new Address(Address.LOCALHOST, port)))
 					.handle(new SnmpServerHandler() {

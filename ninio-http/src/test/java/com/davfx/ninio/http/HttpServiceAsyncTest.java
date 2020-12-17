@@ -1,8 +1,5 @@
 package com.davfx.ninio.http;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-
 import com.davfx.ninio.core.Disconnectable;
 import com.davfx.ninio.core.Ninio;
 import com.davfx.ninio.http.service.HttpController;
@@ -10,8 +7,20 @@ import com.davfx.ninio.http.service.annotations.Path;
 import com.davfx.ninio.http.service.annotations.QueryParameter;
 import com.davfx.ninio.http.service.annotations.Route;
 import com.davfx.ninio.http.service.controllers.Jsonp;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Test;
+
+import static com.davfx.ninio.http.TestUtils.findAvailablePort;
 
 public class HttpServiceAsyncTest {
+
+	private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
+	}
 	
 	@Path("/get")
 	public static final class TestGetWithQueryParameterController implements HttpController {
@@ -28,8 +37,8 @@ public class HttpServiceAsyncTest {
 	@Test
 	public void testGetWithQueryParameter() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.ControllerVisitor(TestGetWithQueryParameterController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=world")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
 			}
 		}
 	}
@@ -48,13 +57,13 @@ public class HttpServiceAsyncTest {
 	@Test
 	public void testGetWithQueryParameterIntercepted() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.InterceptorControllerVisitor(TestInterceptorBeforeController.class, TestGetWithQueryParameterController.class))) {
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.InterceptorControllerVisitor(TestInterceptorBeforeController.class, TestGetWithQueryParameterController.class))) {
 				try {
-					Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=world")).isEqualTo("");
+					Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world")).isEqualTo("");
 					Assertions.fail("Should fail");
 				} catch (Exception e) {
 				}
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=world&check=bepolite")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world&check=bepolite")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
 			}
 		}
 	}
@@ -62,8 +71,8 @@ public class HttpServiceAsyncTest {
 	@Test
 	public void testGetWithQueryParameterInterceptedWrap() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.InterceptorControllerVisitor(Jsonp.class, TestGetWithQueryParameterController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=world&jsonp=f")).isEqualTo("text/plain; charset=UTF-8/f(GET hello:world);\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.InterceptorControllerVisitor(Jsonp.class, TestGetWithQueryParameterController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world&jsonp=f")).isEqualTo("text/plain; charset=UTF-8/f(GET hello:world);\n");
 			}
 		}
 	}

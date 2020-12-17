@@ -1,15 +1,16 @@
 package com.davfx.ninio.core;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
+import com.davfx.ninio.util.Lock;
+import com.davfx.ninio.util.Wait;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.davfx.ninio.util.Lock;
-import com.davfx.ninio.util.Wait;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.core.TestUtil.findAvailablePort;
 
 public class UdpTest {
 
@@ -20,7 +21,7 @@ public class UdpTest {
 		final Lock<ByteBuffer, IOException> lock = new Lock<>();
 		
 		try (Ninio ninio = Ninio.create()) {
-			int port = 8080;
+			int port = findAvailablePort();
 	
 			Wait serverWaitConnecting = new Wait();
 			Wait serverWaitClosing = new Wait();

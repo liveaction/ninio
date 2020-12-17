@@ -1,27 +1,6 @@
 package com.davfx.ninio.proxy;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.ByteBufferUtils;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Disconnectable;
-import com.davfx.ninio.core.Listener;
-import com.davfx.ninio.core.LockFailedConnection;
-import com.davfx.ninio.core.LockReceivedConnection;
-import com.davfx.ninio.core.LockSendCallback;
-import com.davfx.ninio.core.Ninio;
-import com.davfx.ninio.core.Nop;
-import com.davfx.ninio.core.TcpSocketServer;
-import com.davfx.ninio.core.WaitClosedConnection;
-import com.davfx.ninio.core.WaitConnectedConnection;
-import com.davfx.ninio.core.WaitSentSendCallback;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.http.HttpContentReceiver;
 import com.davfx.ninio.http.HttpContentSender;
 import com.davfx.ninio.http.HttpListening;
@@ -30,18 +9,33 @@ import com.davfx.ninio.http.HttpRequest;
 import com.davfx.ninio.http.HttpResponse;
 import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.proxy.TestUtil.findAvailablePort;
 
 public class HttpSocketTest {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(HttpSocketTest.class);
+
+	private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
+	}
 	
 	@Test
 	public void test() throws Exception {
 		final Lock<ByteBuffer, IOException> lock = new Lock<>();
 		
 		try (Ninio ninio = Ninio.create()) {
-			int port = 8080;
-
 			final Wait serverWaitHttpServerClosing = new Wait();
 			final Wait serverWaitHttpServerConnecting = new Wait();
 			try (Listener httpSocketServer = ninio.create(TcpSocketServer.builder().bind(new Address(Address.ANY, port)))) {
@@ -84,7 +78,7 @@ public class HttpSocketTest {
 				
 				serverWaitHttpServerConnecting.waitFor();
 				
-				int proxyPort = 8081;
+				int proxyPort = findAvailablePort();
 
 				Wait serverWaitForProxyServerClosing = new Wait();
 
@@ -130,8 +124,6 @@ public class HttpSocketTest {
 		final Lock<ByteBuffer, IOException> lock = new Lock<>();
 		
 		try (Ninio ninio = Ninio.create()) {
-			int port = 8080;
-
 			final Wait serverWaitHttpServerClosing = new Wait();
 			final Wait serverWaitHttpServerConnecting = new Wait();
 			try (Listener httpSocketServer = ninio.create(TcpSocketServer.builder().bind(new Address(Address.ANY, port)))) {
@@ -174,7 +166,7 @@ public class HttpSocketTest {
 				
 				serverWaitHttpServerConnecting.waitFor();
 				
-				int proxyPort = 8081;
+				int proxyPort = findAvailablePort();
 
 				Wait serverWaitForProxyServerClosing = new Wait();
 

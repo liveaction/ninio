@@ -1,32 +1,17 @@
 package com.davfx.ninio.http;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.ByteBufferUtils;
-import com.davfx.ninio.core.Connected;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.InMemoryBuffers;
-import com.davfx.ninio.core.Listener;
-import com.davfx.ninio.core.Listening;
-import com.davfx.ninio.core.LockFailedConnection;
-import com.davfx.ninio.core.LockReceivedConnection;
-import com.davfx.ninio.core.Ninio;
-import com.davfx.ninio.core.Nop;
-import com.davfx.ninio.core.SendCallback;
-import com.davfx.ninio.core.TcpSocketServer;
-import com.davfx.ninio.core.Timeout;
-import com.davfx.ninio.core.WaitClosedConnection;
-import com.davfx.ninio.core.WaitConnectedConnection;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.dns.DnsClient;
 import com.davfx.ninio.dns.DnsConnecter;
 import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.http.TestUtils.findAvailablePort;
 
 public class WebsocketClientServerTest {
 	@Test
@@ -37,7 +22,7 @@ public class WebsocketClientServerTest {
 		final Wait serverWaitClientConnecting = new Wait();
 		final Wait serverWaitClientClosing = new Wait();
 
-		int port = 8080;
+		int port = findAvailablePort();
 		try (Ninio ninio = Ninio.create(); Timeout timeout = new Timeout()) {
 			try (Listener tcp = ninio.create(TcpSocketServer.builder().bind(new Address(Address.ANY, port)))) {
 				tcp.listen(ninio.create(HttpListening.builder().with(new WebsocketHttpListeningHandler(true, new Listening() {

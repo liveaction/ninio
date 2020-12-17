@@ -1,11 +1,5 @@
 package com.davfx.ninio.proxy;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.ByteBufferUtils;
 import com.davfx.ninio.core.Connecter;
@@ -17,6 +11,13 @@ import com.davfx.ninio.core.Nop;
 import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
 import com.google.common.base.Charsets;
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.proxy.TestUtil.findAvailablePort;
 
 public class EchoTest {
 	
@@ -25,7 +26,7 @@ public class EchoTest {
 		final Lock<ByteBuffer, IOException> lock = new Lock<>();
 		
 		try (Ninio ninio = Ninio.create()) {
-			int proxyPort = 8081;
+			int proxyPort = findAvailablePort();
 
 			final Wait serverWaitServerClosing = new Wait();
 			final Wait serverWaitServerConnecting = new Wait();
@@ -51,7 +52,7 @@ public class EchoTest {
 					}
 				}
 			}))) {
-				int port = 8080;
+				int port = findAvailablePort();
 				
 				serverWaitServerConnecting.waitFor();
 				
@@ -105,7 +106,7 @@ public class EchoTest {
 		final Lock<ByteBuffer, IOException> lock = new Lock<>();
 		
 		try (Ninio ninio = Ninio.create()) {
-			int proxyPort = 8081;
+			int proxyPort = findAvailablePort();
 
 			final Wait serverWaitServerClosing = new Wait();
 			final Wait serverWaitServerConnecting = new Wait();
@@ -131,7 +132,7 @@ public class EchoTest {
 					}
 				}
 			}))) {
-				int port = 8080;
+				int port = findAvailablePort();
 				
 				serverWaitServerConnecting.waitFor();
 				

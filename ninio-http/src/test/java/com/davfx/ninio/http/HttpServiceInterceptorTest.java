@@ -1,12 +1,5 @@
 package com.davfx.ninio.http;
 
-import java.io.ByteArrayInputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-
 import com.davfx.ninio.core.Disconnectable;
 import com.davfx.ninio.core.Ninio;
 import com.davfx.ninio.http.service.HttpContentType;
@@ -19,11 +12,25 @@ import com.davfx.ninio.http.service.controllers.CrossDomain;
 import com.davfx.ninio.http.service.controllers.Jsonp;
 import com.google.common.base.Charsets;
 import com.google.gson.JsonPrimitive;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.ByteArrayInputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import static com.davfx.ninio.http.TestUtils.findAvailablePort;
 
 public class HttpServiceInterceptorTest {
 	
 	static {
 		System.setProperty("http.keepAlive", "false");
+	}private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
 	}
 	
 	public static final class TestInterceptorBeforeController implements HttpController {
@@ -49,18 +56,18 @@ public class HttpServiceInterceptorTest {
 	@Test
 	public void testGetWithQueryParameter() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.ControllerVisitor(TestGetWithQueryParameterController.class))) {
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterController.class))) {
 				try {
-					TestUtils.get("http://127.0.0.1:8080/get/hello?message=world");
+					TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world");
 					Assertions.fail("Should fail");
 				} catch (Exception e) {
 				}
 				try {
-					TestUtils.get("http://127.0.0.1:8080/get/hello?message=world&check=love");
+					TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world&check=love");
 					Assertions.fail("Should fail");
 				} catch (Exception e) {
 				}
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=world&check=bepolite")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world&check=bepolite")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
 			}
 		}
 	}
@@ -92,9 +99,9 @@ public class HttpServiceInterceptorTest {
 	@Test
 	public void testGetWithQueryParameterWrapped() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.ControllerVisitor(TestGetWithQueryParameterWrappedController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=helloworld")).isEqualTo("application/json; charset=UTF-8/\"helloworld\"\n");
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=helloworld&jsonp=f")).isEqualTo("application/javascript/f(\"helloworld\");\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.ControllerVisitor(TestGetWithQueryParameterWrappedController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=helloworld")).isEqualTo("application/json; charset=UTF-8/\"helloworld\"\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=helloworld&jsonp=f")).isEqualTo("application/javascript/f(\"helloworld\");\n");
 			}
 		}
 	}
@@ -110,8 +117,8 @@ public class HttpServiceInterceptorTest {
 	@Test
 	public void testGetWithQueryParameterWrappedGlobally() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.InterceptorControllerVisitor(Jsonp.class, TestGetWithQueryParameterWrappedGloballyController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=helloworld&jsonp=f")).isEqualTo("application/javascript/f(\"helloworld\");\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.InterceptorControllerVisitor(Jsonp.class, TestGetWithQueryParameterWrappedGloballyController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=helloworld&jsonp=f")).isEqualTo("application/javascript/f(\"helloworld\");\n");
 			}
 		}
 	}
@@ -128,8 +135,8 @@ public class HttpServiceInterceptorTest {
 	@Test
 	public void testGetWithQueryParameterWrappedGloballyStream() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.InterceptorControllerVisitor(Jsonp.class, TestGetWithQueryParameterWrappedGloballyStreamController.class))) {
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=helloworld&jsonp=f")).isEqualTo("application/javascript/f(\"helloworld\");\n");
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.InterceptorControllerVisitor(Jsonp.class, TestGetWithQueryParameterWrappedGloballyStreamController.class))) {
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=helloworld&jsonp=f")).isEqualTo("application/javascript/f(\"helloworld\");\n");
 			}
 		}
 	}
@@ -145,12 +152,12 @@ public class HttpServiceInterceptorTest {
 	@Test
 	public void testGetCrossDomain() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			try (Disconnectable server = TestUtils.server(ninio, 8080, new TestUtils.InterceptorControllerVisitor(CrossDomain.class, TestGetCrossDomainController.class))) {
-				HttpURLConnection c = (HttpURLConnection) new URL("http://127.0.0.1:8080/get/hello?message=world").openConnection();
+			try (Disconnectable server = TestUtils.server(ninio, port, new TestUtils.InterceptorControllerVisitor(CrossDomain.class, TestGetCrossDomainController.class))) {
+				HttpURLConnection c = (HttpURLConnection) new URL("http://127.0.0.1:"+port+"/get/hello?message=world").openConnection();
 				Assertions.assertThat(c.getHeaderField("Access-Control-Allow-Origin")).isEqualTo("*");
 				Assertions.assertThat(c.getHeaderField("Access-Control-Allow-Methods")).isEqualTo("GET, PUT, POST, DELETE, HEAD");
 				c.disconnect();
-				Assertions.assertThat(TestUtils.get("http://127.0.0.1:8080/get/hello?message=world")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
+				Assertions.assertThat(TestUtils.get("http://127.0.0.1:"+port+"/get/hello?message=world")).isEqualTo("text/plain; charset=UTF-8/GET hello:world\n");
 			}
 		}
 	}

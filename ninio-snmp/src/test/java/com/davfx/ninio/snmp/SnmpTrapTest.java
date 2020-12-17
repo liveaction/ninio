@@ -1,13 +1,5 @@
 package com.davfx.ninio.snmp;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Connecter;
 import com.davfx.ninio.core.Connection;
@@ -15,6 +7,15 @@ import com.davfx.ninio.core.Ninio;
 import com.davfx.ninio.core.UdpSocket;
 import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.snmp.TestUtil.findAvailablePort;
 
 public class SnmpTrapTest {
 	
@@ -23,7 +24,7 @@ public class SnmpTrapTest {
 	@Test
 	public void test() throws Exception {
 		try (Ninio ninio = Ninio.create()) {
-			int port = 8080;
+			int port = findAvailablePort();
 			
 			final Oid sentOid = new Oid("1.1.1.1.1.9");
 			

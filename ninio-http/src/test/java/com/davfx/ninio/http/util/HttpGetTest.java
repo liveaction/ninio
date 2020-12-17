@@ -1,13 +1,5 @@
 package com.davfx.ninio.http.util;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.ByteBufferUtils;
 import com.davfx.ninio.core.Disconnectable;
@@ -16,25 +8,33 @@ import com.davfx.ninio.core.Listener;
 import com.davfx.ninio.core.Ninio;
 import com.davfx.ninio.core.Nop;
 import com.davfx.ninio.core.TcpSocketServer;
-import com.davfx.ninio.http.HttpContentReceiver;
-import com.davfx.ninio.http.HttpContentSender;
-import com.davfx.ninio.http.HttpListening;
-import com.davfx.ninio.http.HttpListeningHandler;
-import com.davfx.ninio.http.HttpMessage;
-import com.davfx.ninio.http.HttpMethod;
-import com.davfx.ninio.http.HttpReceiver;
-import com.davfx.ninio.http.HttpRequest;
-import com.davfx.ninio.http.HttpResponse;
-import com.davfx.ninio.http.HttpStatus;
+import com.davfx.ninio.http.*;
 import com.davfx.ninio.util.Lock;
 import com.davfx.ninio.util.Wait;
 import com.google.common.base.Charsets;
+import org.assertj.core.api.Assertions;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.http.TestUtils.findAvailablePort;
 
 public class HttpGetTest {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(HttpGetTest.class);
 	
 	private static final String LOCALHOST = "localhost";//127.0.0.1";
+
+	private int port;
+
+	@Before
+	public void setUp() throws Exception {
+		port = findAvailablePort();
+	}
 
 	private static Disconnectable server(Ninio ninio, int port, final String suffix) {
 		final Wait waitForClosing = new Wait();
@@ -96,7 +96,6 @@ public class HttpGetTest {
 	
 	@Test
 	public void testSimpleGet() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create()) {
 			try (Disconnectable tcp = server(ninio, port)) {
 				try (HttpClient client = new HttpClient()) {
@@ -131,7 +130,6 @@ public class HttpGetTest {
 
 	@Test
 	public void testSimplePost() throws Exception {
-		int port = 8080;
 		try (Ninio ninio = Ninio.create()) {
 			try (Disconnectable tcp = server(ninio, port)) {
 				try (HttpClient client = new HttpClient()) {

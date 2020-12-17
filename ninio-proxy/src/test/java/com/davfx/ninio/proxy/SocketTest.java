@@ -1,33 +1,15 @@
 package com.davfx.ninio.proxy;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
+import com.davfx.ninio.core.*;
+import com.davfx.ninio.util.Lock;
+import com.davfx.ninio.util.Wait;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.ByteBufferUtils;
-import com.davfx.ninio.core.Connected;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.Disconnectable;
-import com.davfx.ninio.core.Listener;
-import com.davfx.ninio.core.Listening;
-import com.davfx.ninio.core.LockFailedConnection;
-import com.davfx.ninio.core.LockListening;
-import com.davfx.ninio.core.LockReceivedConnection;
-import com.davfx.ninio.core.LockSendCallback;
-import com.davfx.ninio.core.Ninio;
-import com.davfx.ninio.core.Nop;
-import com.davfx.ninio.core.TcpSocketServer;
-import com.davfx.ninio.core.WaitClosedConnection;
-import com.davfx.ninio.core.WaitClosedListening;
-import com.davfx.ninio.core.WaitConnectedConnection;
-import com.davfx.ninio.core.WaitConnectedListening;
-import com.davfx.ninio.core.WaitSentSendCallback;
-import com.davfx.ninio.util.Lock;
-import com.davfx.ninio.util.Wait;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.davfx.ninio.proxy.TestUtil.findAvailablePort;
 
 public class SocketTest {
 
@@ -36,7 +18,7 @@ public class SocketTest {
 		final Lock<ByteBuffer, IOException> lock = new Lock<>();
 		
 		try (Ninio ninio = Ninio.create()) {
-			int port = 8080;
+			int port = findAvailablePort();
 	
 			Wait serverWaitConnecting = new Wait();
 			Wait serverWaitClosing = new Wait();
@@ -86,7 +68,7 @@ public class SocketTest {
 
 				Wait serverWaitForProxyServerClosing = new Wait();
 
-				int proxyPort = 8081;
+				int proxyPort = findAvailablePort();
 
 				try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultServer(new Address(Address.ANY, proxyPort), new WaitProxyListening(serverWaitForProxyServerClosing)))) {
 					try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultClient(new Address(Address.LOCALHOST, proxyPort)))) {
