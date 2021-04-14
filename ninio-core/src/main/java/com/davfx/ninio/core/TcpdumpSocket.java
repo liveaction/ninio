@@ -1,10 +1,16 @@
 package com.davfx.ninio.core;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import com.davfx.ninio.core.dependencies.Dependencies;
+import com.davfx.ninio.util.ClassThreadFactory;
+import com.davfx.ninio.util.ConfigUtils;
+import com.davfx.ninio.util.Wait;
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -12,25 +18,9 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.davfx.ninio.core.dependencies.Dependencies;
-import com.davfx.ninio.util.ClassThreadFactory;
-import com.davfx.ninio.util.ConfigUtils;
-import com.davfx.ninio.util.DateUtils;
-import com.davfx.ninio.util.Wait;
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-import com.typesafe.config.Config;
 
 public final class TcpdumpSocket implements Connecter {
-	
+
 	public static final class Test {
 		public static final class Receive {
 			private static final Logger INNER_LOGGER = LoggerFactory.getLogger(Receive.class);
@@ -51,7 +41,7 @@ public final class TcpdumpSocket implements Connecter {
 					throw new Exception("Bad mode (only hex|raw allowed): " + modeString);
 				}
 				String rule = System.getProperty("rule", "dst port " + port);
-				
+
 				try (Ninio ninio = Ninio.create()) {
 					try (Connecter server = ninio.create(TcpdumpSocket.builder().on(interfaceId).mode(mode).rule(rule).bind(new Address(a.getAddress(), port)))) {
 						server.connect(
@@ -89,68 +79,6 @@ public final class TcpdumpSocket implements Connecter {
 	private static final String TCPDUMP_DEFAULT_INTERFACE_ID = CONFIG.getString("tcpdump.interface");
 	private static final String TCPDUMP_DEFAULT_RULE = CONFIG.getString("tcpdump.rule");
 
-	private static final double SUPERVISION_DISPLAY = ConfigUtils.getDuration(CONFIG, "supervision.tcpdump.display");
-	private static final double SUPERVISION_CLEAR = ConfigUtils.getDuration(CONFIG, "supervision.tcpdump.clear");
-
-	private static final class Supervision {
-		private static double floorTime(double now, double period) {
-	    	double precision = 1000d;
-	    	long t = (long) (now * precision);
-	    	long d = (long) (period * precision);
-	    	return (t - (t % d)) / precision;
-		}
-		
-		private static String percent(long out, long in) {
-			return String.format("%.2f", ((double) (out - in)) * 100d / ((double) out));
-		}
-	
-		private final AtomicLong inPackets = new AtomicLong(0L);
-		private final AtomicLong outPackets = new AtomicLong(0L);
-		private final AtomicLong inBytes = new AtomicLong(0L);
-		private final AtomicLong outBytes = new AtomicLong(0L);
-		
-		public Supervision() {
-			double now = DateUtils.now();
-			double startDisplay = SUPERVISION_DISPLAY - (now - floorTime(now, SUPERVISION_DISPLAY));
-			double startClear = SUPERVISION_CLEAR - (now - floorTime(now, SUPERVISION_CLEAR));
-			
-			ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ClassThreadFactory(TcpdumpSocket.Supervision.class, true));
-
-			executor.scheduleAtFixedRate(new Runnable() {
-				@Override
-				public void run() {
-					long ip = inPackets.get();
-					long ib = inBytes.get();
-					long op = outPackets.get();
-					long ob = outBytes.get();
-					LOGGER.debug("[UDP Supervision] out = {} ({} Kb), in = {} ({} Kb), lost = {} %", op, ob / 1000d, ip, ib / 1000d, percent(op, ip));
-				}
-			}, (long) (startDisplay * 1000d), (long) (SUPERVISION_DISPLAY * 1000d), TimeUnit.MILLISECONDS);
-
-			executor.scheduleAtFixedRate(new Runnable() {
-				@Override
-				public void run() {
-					long ip = inPackets.getAndSet(0L);
-					long ib = inBytes.getAndSet(0L);
-					long op = outPackets.getAndSet(0L);
-					long ob = outBytes.getAndSet(0L);
-					LOGGER.info("[UDP Supervision] (cleared) out = {} ({} Kb), in = {} ({} Kb), lost = {} %", op, ob / 1000d, ip, ib / 1000d, percent(op, ip));
-				}
-			}, (long) (startClear * 1000d), (long) (SUPERVISION_CLEAR * 1000d), TimeUnit.MILLISECONDS);
-		}
-		
-		public void incIn(long bytes) {
-			inPackets.incrementAndGet();
-			inBytes.addAndGet(bytes);
-		}
-		public void incOut(long bytes) {
-			outPackets.incrementAndGet();
-			outBytes.addAndGet(bytes);
-		}
-	}
-	
-	private static final Supervision SUPERVISION = (SUPERVISION_DISPLAY > 0d) ? new Supervision() : null;
-
 	public static Builder builder() {
 		return new Builder() {
 			private String interfaceId = TCPDUMP_DEFAULT_INTERFACE_ID;
@@ -174,13 +102,13 @@ public final class TcpdumpSocket implements Connecter {
 				this.rule = rule;
 				return this;
 			}
-			
+
 			@Override
 			public Builder bind(Address bindAddress) {
 				this.bindAddress = bindAddress;
 				return this;
 			}
-			
+
 			@Override
 			public Connecter create(NinioProvider ninioProvider) {
 				if (interfaceId == null) {
@@ -190,9 +118,9 @@ public final class TcpdumpSocket implements Connecter {
 			}
 		};
 	}
-	
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(TcpdumpSocket.class);
-	
+
 	private static final String TCPDUMP_COMMAND = CONFIG.getString("tcpdump.path");
 	private static final int READ_BUFFER_SIZE = CONFIG.getBytes("tcpdump.datagram.read.size").intValue();
 	private static final int WRITE_BUFFER_SIZE = CONFIG.getBytes("tcpdump.datagram.write.size").intValue();
@@ -202,7 +130,7 @@ public final class TcpdumpSocket implements Connecter {
 	private static void execute(String name, Runnable runnable) {
 		new ClassThreadFactory(TcpdumpSocket.class, name).newThread(runnable).start();
 	}
-	
+
 	private final String interfaceId;
 	private final TcpdumpMode mode;
 	private final String rule;
@@ -212,13 +140,20 @@ public final class TcpdumpSocket implements Connecter {
 	private Process process = null;
 	private boolean closed = false;
 
+	private final RequestTracker inTracker;
+	private final RequestTracker outTracker;
+
 	private TcpdumpSocket(String interfaceId, TcpdumpMode mode, String rule, Address bindAddress) { //, final boolean promiscuous) {
 		this.interfaceId = interfaceId;
 		this.mode = mode;
 		this.rule = rule;
 		this.bindAddress = bindAddress;
+		String prefix = "TCP_DUMP";
+		inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
+		outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
+		RequestTrackerManager.instance().relation("lost", new RequestTrackerManager.PercentRelation(outTracker, inTracker), prefix);
 	}
-	
+
 	@Override
 	public void connect(final Connection callback) {
 		if (socket != null) {
@@ -252,11 +187,11 @@ public final class TcpdumpSocket implements Connecter {
 			callback.failed(new IOException("Could not create send socket", ee));
 			return;
 		}
-		
+
 		//
-		
+
 		final TcpdumpReader tcpdumpReader = (mode == TcpdumpMode.RAW) ? new RawTcpdumpReader(interfaceId.equals("any")) : new HexTcpdumpReader();
-		
+
 		File dir = new File(".");
 
 		List<String> toExec = new LinkedList<String>();
@@ -287,7 +222,7 @@ public final class TcpdumpSocket implements Connecter {
 				}
 			}
 		}
-		
+
 		ProcessBuilder pb = new ProcessBuilder(toExec);
 		pb.directory(dir);
 		final Process p;
@@ -305,7 +240,7 @@ public final class TcpdumpSocket implements Connecter {
 		process = p;
 
 		callback.connected(null);
-		
+
 		final InputStream error = process.getErrorStream();
 		execute("err", new Runnable() {
 			@Override
@@ -328,7 +263,7 @@ public final class TcpdumpSocket implements Connecter {
 				}
 			}
 		});
-		
+
 		final InputStream input = process.getInputStream();
 		execute("in", new Runnable() {
 			@Override
@@ -338,9 +273,8 @@ public final class TcpdumpSocket implements Connecter {
 						tcpdumpReader.read(input, new TcpdumpReader.Handler() {
 							@Override
 							public void handle(double timestamp, Address sourceAddress, Address destinationAddress, ByteBuffer buffer) {
-								if (SUPERVISION != null) {
-									SUPERVISION.incIn(buffer.remaining());
-								}
+								inTracker.track(Address.ipToString(sourceAddress.ip), addr ->
+										String.format("Received ping from %s ", addr));
 
 								callback.received(sourceAddress, buffer);
 							}
@@ -389,10 +323,10 @@ public final class TcpdumpSocket implements Connecter {
 					input.close();
 				} catch (IOException e) {
 				}
-				
+
 				p.destroy();
 				s.close();
-				
+
 				if (code != 0) {
 					callback.failed(new IOException("Non zero return code from tcpdump: " + code));
 				} else {
@@ -401,7 +335,7 @@ public final class TcpdumpSocket implements Connecter {
 			}
 		});
 	}
-	
+
 	@Override
 	public void send(Address address, ByteBuffer buffer, final SendCallback callback) {
 		if (socket == null) {
@@ -409,12 +343,6 @@ public final class TcpdumpSocket implements Connecter {
 		}
 
 		LOGGER.trace("Sending datagram to: {}", address);
-
-		if (buffer != null) {
-			if (SUPERVISION != null) {
-				SUPERVISION.incOut(buffer.remaining());
-			}
-		}
 
 		try {
 			if (closed) {
@@ -426,6 +354,7 @@ public final class TcpdumpSocket implements Connecter {
 			} else {
 				DatagramPacket packet = new DatagramPacket(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), InetAddress.getByAddress(address.ip), address.port);
 				socket.send(packet);
+				outTracker.track(Address.ipToString(address.ip), addr -> String.format("Sending tcpdump to %s ", addr));
 			}
 
 			callback.sent();
@@ -433,14 +362,14 @@ public final class TcpdumpSocket implements Connecter {
 			callback.failed(new IOException("Could not write", e));
 		}
 	}
-	
+
 	@Override
 	public void close() {
 		if (closed) {
 			return;
 		}
 		closed = true;
-		
+
 		if (socket != null) {
 			socket.close();
 		}
