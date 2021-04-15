@@ -174,13 +174,13 @@ public final class SnmpSerialByAddress {
 						
 						ToSendByAddress q = toSend.get(a);
 						if (q == null) {
-							LOGGER.info("Call to: {} NOT serialized", a);
+							LOGGER.trace("Call to: {} NOT serialized", a);
 							q = new ToSendByAddress();
 							toSend.put(a, q);
 							q.list.addLast(s);
 							doSendNext(a, q);
 						} else {
-							LOGGER.info("Serializing call to: {}", a);
+							LOGGER.trace("Serializing call to: {}", a);
 							q.list.addLast(s);
 						}
 					}
