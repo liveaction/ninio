@@ -1,5 +1,10 @@
 package com.davfx.ninio.http;
 
+import com.davfx.ninio.core.Failing;
+import com.davfx.ninio.http.dependencies.Dependencies;
+import com.davfx.ninio.util.ConfigUtils;
+import com.typesafe.config.Config;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -9,11 +14,6 @@ import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
-import com.davfx.ninio.core.Failing;
-import com.davfx.ninio.http.dependencies.Dependencies;
-import com.davfx.ninio.util.ConfigUtils;
-import com.typesafe.config.Config;
 
 final class GzipReader implements HttpContentReceiver {
 
@@ -87,12 +87,12 @@ final class GzipReader implements HttpContentReceiver {
 			previewFooter.addLast(deflated.duplicate());
 			deflated.position(deflated.position() + deflated.remaining());
 
-			int toFlush = FOOTER_LENGTH - currentPreviewFooterLength;
+			int toFlush = currentPreviewFooterLength - FOOTER_LENGTH;
 			while (toFlush > 0) {
 				ByteBuffer b = previewFooter.getFirst();
 
 				ByteBuffer d = b.duplicate();
-				d.limit(Math.min(d.limit(), toFlush));
+				d.limit(Math.min(d.limit(), d.position()+toFlush));
 				b.position(b.position() + d.remaining());
 				toFlush -= d.remaining();
 				if (!read(d)) {
