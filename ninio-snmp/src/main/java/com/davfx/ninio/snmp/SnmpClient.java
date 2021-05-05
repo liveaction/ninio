@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -249,7 +250,7 @@ public final class SnmpClient implements SnmpConnecter {
 							authRemoteEnginePendingRequestManager.sendPendingRequestsIfReady(address, connecter);
 						}
 						
-						instanceMapper.handle(instanceId, errorStatus, errorIndex, results);
+						instanceMapper.handle(address, instanceId, errorStatus, errorIndex, results);
 					}
 				});
 			}
@@ -346,11 +347,18 @@ public final class SnmpClient implements SnmpConnecter {
 			instances.clear();
 		}
 
-		public void handle(int instanceId, int errorStatus, int errorIndex, Iterable<SnmpResult> results) {
+		public void handle(Address address, int instanceId, int errorStatus, int errorIndex, Iterable<SnmpResult> results) {
 			if (instanceId == Integer.MAX_VALUE) {
-				LOGGER.trace("Calling all instances (request ID = {})", Integer.MAX_VALUE);
-				List<Instance> l = new LinkedList<>(instances.values());
-				instances.clear();
+				LOGGER.trace("Calling all instances for address {} (request ID = {})", address, Integer.MAX_VALUE);
+				List<Instance> l = new LinkedList<>();
+				Iterator<Instance> iterator = instances.values().iterator();
+				while (iterator.hasNext()) {
+					Instance instance = iterator.next();
+					if(instance.address.equals(address)){
+						l.add(instance);
+						iterator.remove();
+					}
+				}
 				for (Instance i : l) {
 					i.handle(errorStatus, errorIndex, results);
 				}
