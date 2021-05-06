@@ -1,12 +1,13 @@
 package com.davfx.ninio.snmp;
 
+import com.davfx.ninio.core.Address;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class SnmpPacketParser {
 
@@ -21,7 +22,7 @@ public final class SnmpPacketParser {
 	private final int errorIndex;
 	private final List<SnmpResult> results = new LinkedList<SnmpResult>();
 
-	public SnmpPacketParser(AuthRemoteEngine authEngine, ByteBuffer buffer) throws IOException {
+	public SnmpPacketParser(Address address, AuthRemoteEngine authEngine, ByteBuffer buffer) throws IOException {
 		BerReader ber = new BerReader(buffer);
 		ber.beginReadSequence();
 		{
@@ -146,15 +147,15 @@ public final class SnmpPacketParser {
 								
 								
 								if (AUTH_ERROR_UNKNOWN_ENGINE_ID_OID.isPrefixOf(oid)) {
-									LOGGER.trace("Engine not known ({}), requestId = {}", oid, requestId);
+									LOGGER.trace("Engine not known ({}), address = {}, requestId = {}", oid, address, requestId);
 									errorStatus = BerConstants.ERROR_STATUS_AUTHENTICATION_NOT_SYNCED;
 									errorIndex = 0;
 								} else if (AUTH_ERROR_NOT_IN_TIME_WINDOW_OID.isPrefixOf(oid)) {
-									LOGGER.trace("Engine not synced ({}), requestId = {}", oid, requestId);
+									LOGGER.trace("Engine not synced ({}), address = {}, requestId = {}", oid, address, requestId);
 									errorStatus = BerConstants.ERROR_STATUS_AUTHENTICATION_NOT_SYNCED;
 									errorIndex = 0;
 								} else if (AUTH_ERROR_OID_PREFIX.isPrefixOf(oid)) {
-									LOGGER.error("Authentication failed ({}), requestId = {}", oid, requestId);
+									LOGGER.debug("Authentication failed ({}), address = {}, requestId = {}", oid, address, requestId);
 									errorStatus = BerConstants.ERROR_STATUS_AUTHENTICATION_FAILED;
 									errorIndex = 0;
 								}
