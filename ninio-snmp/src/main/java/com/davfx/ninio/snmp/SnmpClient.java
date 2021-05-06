@@ -231,7 +231,7 @@ public final class SnmpClient implements SnmpConnecter {
 							ready = true;
 						}
 						try {
-							SnmpPacketParser parser = new SnmpPacketParser((authRemoteEnginePendingRequestManager == null) ? null : authRemoteEnginePendingRequestManager.engine, buffer);
+							SnmpPacketParser parser = new SnmpPacketParser(address, (authRemoteEnginePendingRequestManager == null) ? null : authRemoteEnginePendingRequestManager.engine, buffer);
 							instanceId = parser.getRequestId();
 							errorStatus = parser.getErrorStatus();
 							errorIndex = parser.getErrorIndex();
