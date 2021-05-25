@@ -1,25 +1,6 @@
 package com.davfx.ninio.proxy;
 
-import java.io.IOException;
-import java.net.ProtocolFamily;
-import java.net.StandardProtocolFamily;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.ByteBufferAllocator;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.NinioBuilder;
-import com.davfx.ninio.core.NinioProvider;
-import com.davfx.ninio.core.RawSocket;
-import com.davfx.ninio.core.SendCallback;
-import com.davfx.ninio.core.TcpSocket;
-import com.davfx.ninio.core.TcpdumpMode;
-import com.davfx.ninio.core.TcpdumpSocket;
-import com.davfx.ninio.core.UdpSocket;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.http.HttpConnecter;
 import com.davfx.ninio.http.HttpSocket;
 import com.davfx.ninio.http.HttpSpecification;
@@ -27,6 +8,14 @@ import com.davfx.ninio.http.WebsocketSocket;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
+
+import java.io.IOException;
+import java.net.ProtocolFamily;
+import java.net.StandardProtocolFamily;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Executor;
 
 public final class ProxyClient implements ProxyProvider {
 	
@@ -402,12 +391,18 @@ public final class ProxyClient implements ProxyProvider {
 		private final ProxyHeader header;
 		private final Address connectAddress;
 		private final InnerConnection innerConnection;
-		
+		private final RequestTracker inTracker;
+		private final RequestTracker outTracker;
+
 		public InnerConnector(ProxyHeader header, final Address connectAddress) {
 			this.header = header;
 			this.connectAddress = connectAddress;
-			
+
 			innerConnection = new InnerConnection();
+			String prefix = "proxy-client";
+			inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
+			outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
+			RequestTrackerManager.instance().relation("lost", new RequestTrackerManager.PercentRelation(outTracker, inTracker), prefix);
 
 			proxyExecutor.execute(new Runnable() {
 				@Override
@@ -589,6 +584,8 @@ public final class ProxyClient implements ProxyProvider {
 												}
 												InnerConnection receivedInnerConnection = connections.get(readConnectionId);
 												if (receivedInnerConnection != null) {
+													inTracker.track(Address.ipToString(readIp), addr ->
+															String.format("Received from %s via Proxy", addr));
 													receivedInnerConnection.connection.received(new Address(readIp, readPort), ByteBuffer.wrap(r));
 												}
 												readConnectionId = -1;
@@ -648,7 +645,7 @@ public final class ProxyClient implements ProxyProvider {
 						public void sent() {
 						}
 					};
-					
+
 					if (connectAddress == null) {
 						ByteBuffer b = ByteBuffer.allocate(1 + Ints.BYTES + Ints.BYTES + headerAsBytes.length);
 						b.put((byte) ProxyCommons.Commands.CONNECT_WITHOUT_ADDRESS);
@@ -699,6 +696,8 @@ public final class ProxyClient implements ProxyProvider {
 						b.flip();
 						proxyConnector.send(null, b, callback);
 					} else {
+						outTracker.track(Address.ipToString(sendAddress.ip), addr ->
+								String.format("Sending to %s via Proxy ", addr));
 						// LOGGER.debug("-->SEND_WITH_ADDRESS {} [{} bytes]", sendAddress, sendBuffer.remaining());
 						ByteBuffer b = ByteBuffer.allocate(1 + Ints.BYTES + Ints.BYTES + sendAddress.ip.length + Ints.BYTES + Ints.BYTES + sendBuffer.remaining());
 						b.put((byte) ProxyCommons.Commands.SEND_WITH_ADDRESS);
