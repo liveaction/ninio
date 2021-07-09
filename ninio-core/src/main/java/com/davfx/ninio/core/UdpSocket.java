@@ -247,7 +247,7 @@ public final class UdpSocket implements Connecter {
 										readBuffer.flip();
 										Address a = new Address(from.getAddress().getAddress(), from.getPort());
 
-										inTracker.track(from.getAddress().getHostAddress(), addr -> String.format("Received request from %s", addr));
+										inTracker.track(from.getAddress().getHostAddress(), addr -> String.format("Received from %s", addr));
 										long start = System.nanoTime();
 										while((start + 100000L) >= System.nanoTime());
 										callback.received(a, readBuffer);
@@ -334,7 +334,7 @@ public final class UdpSocket implements Connecter {
 														throw new IOException("Packet was not entirely written");
 													}
 
-													outTracker.track(a.getAddress().getHostAddress(), addr -> String.format("Sending request to %s", addr));
+													outTracker.track(a.getAddress().getHostAddress(), addr -> String.format("Sending to %s", addr));
 
 													toWriteLength -= size; //%% - toWrite.buffer.remaining();
 												} catch (IOException e) {
