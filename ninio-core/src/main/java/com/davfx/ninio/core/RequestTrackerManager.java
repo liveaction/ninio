@@ -112,7 +112,13 @@ public final class RequestTrackerManager implements Closeable {
                     LOGGER.trace("No changes of file {}", TRACK_PATH);
                 }
             } else {
-                LOGGER.trace("File {} does no exist", TRACK_PATH);
+                if (lastTrackingFileUpdate.isAfter(Instant.EPOCH)) {
+                    LOGGER.trace("File {} has been deleted, unfollowing all devices", TRACK_PATH);
+                    lastTrackingFileUpdate = Instant.EPOCH;
+                    requestTrackers.values().forEach(requestTracker -> requestTracker.setAddressToFollow(ImmutableSet.of()));
+                } else {
+                    LOGGER.trace("File {} does no exist", TRACK_PATH);
+                }
             }
         } catch (Exception e) {
             LOGGER.warn("Error while loading tracking devices", e);
