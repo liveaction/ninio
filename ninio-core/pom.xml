@@ -16,6 +16,11 @@
 			<groupId>com.davfx.ninio</groupId>
 			<artifactId>ninio-util</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-core</artifactId>
+			<version>4.2.0</version>
+		</dependency>
 		<!--
 		<dependency>
 			<groupId>org.xerial</groupId>

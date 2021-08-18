@@ -1,5 +1,7 @@
-package com.davfx.ninio.core;
+package com.davfx.ninio.core.supervision.tracking;
 
+import com.davfx.ninio.core.supervision.metrics.LongMetric;
+import com.davfx.ninio.core.supervision.metrics.Metric;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
-public final class RequestTracker {
+public final class RequestTracker implements LongMetric {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestTracker.class);
 
@@ -30,11 +32,23 @@ public final class RequestTracker {
         this.addressToFollow = addressToFollow;
     }
 
-    public long count() {
-        return count.sum();
+    @Override
+    public String name() {
+        return name;
     }
 
+    @Override
+    public String getValue() {
+        return count.toString();
+    }
+
+    @Override
     public void reset() {
         count.reset();
+    }
+
+    @Override
+    public Long value() {
+        return count.sum();
     }
 }

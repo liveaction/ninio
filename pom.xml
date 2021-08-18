@@ -46,6 +46,7 @@
 
     <properties>
         <jdk.version>1.8</jdk.version>
+        <metrics-core.version>4.2.3</metrics-core.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -131,6 +132,12 @@
                 <groupId>com.davfx.ninio</groupId>
                 <artifactId>ninio-csv</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${metrics-core.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
