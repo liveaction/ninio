@@ -59,7 +59,7 @@ public final class RequestTrackerManager implements Closeable {
                 displayStart, SUPERVISION_DISPLAY.toMillis(), TimeUnit.MILLISECONDS);
 
         executor.scheduleAtFixedRate(() -> {
-            LOGGER.warn("Clear Trackers");
+            LOGGER.debug("Clear Trackers");
             display(true);
             requestTrackers.values().forEach(RequestTracker::reset);
         }, clearStart, SUPERVISION_CLEAR.toMillis(), TimeUnit.MILLISECONDS);
