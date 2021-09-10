@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 public final class RequestTrackerManager implements Closeable {
@@ -36,6 +37,7 @@ public final class RequestTrackerManager implements Closeable {
 
     private final Map<String, RequestTracker> requestTrackers = new ConcurrentSkipListMap<>();
     private final Map<String, Relation> relations = new ConcurrentSkipListMap<>();
+    private final AtomicReference<ImmutableSet<String>> addressesToFollow = new AtomicReference<>(ImmutableSet.of());
 
     private Instant lastTrackingFileUpdate = Instant.EPOCH;
 
@@ -75,7 +77,7 @@ public final class RequestTrackerManager implements Closeable {
             for (Map.Entry<String, Long> entry : counts.entrySet()) {
                 if (entry.getValue() != 0) {
                     String message = String.format("%s%s = %s", prefix, entry.getKey(), entry.getValue());
-                    if(clear) LOGGER.info(message);
+                    if (clear) LOGGER.info(message);
                     else LOGGER.debug(message);
                 }
             }
@@ -83,7 +85,7 @@ public final class RequestTrackerManager implements Closeable {
                 String relation = entry.getValue().compute();
                 if (relation != null) {
                     String message = String.format("%s%s = %s", prefix, entry.getKey(), relation);
-                    if(clear) LOGGER.info(message);
+                    if (clear) LOGGER.info(message);
                     else LOGGER.debug(message);
                 }
             }
@@ -91,7 +93,11 @@ public final class RequestTrackerManager implements Closeable {
     }
 
     public RequestTracker getTracker(String trackerName, String... tags) {
-        return requestTrackers.computeIfAbsent(key(trackerName, tags), RequestTracker::new);
+        return requestTrackers.computeIfAbsent(key(trackerName, tags), name -> {
+            RequestTracker requestTracker = new RequestTracker(name);
+            requestTracker.setAddressToFollow(addressesToFollow.get());
+            return requestTracker;
+        });
     }
 
     public interface Relation {
@@ -107,7 +113,7 @@ public final class RequestTrackerManager implements Closeable {
                     ImmutableSet<String> addressToFollow = ImmutableSet.copyOf(Files.readAllLines(TRACK_PATH));
                     LOGGER.info("Will now follow {} devices", addressToFollow.size());
                     LOGGER.debug("Will now follow devices {}", addressToFollow);
-                    requestTrackers.values().forEach(requestTracker -> requestTracker.setAddressToFollow(addressToFollow));
+                    setAddressToFollow(addressToFollow);
                 } else {
                     LOGGER.trace("No changes of file {}", TRACK_PATH);
                 }
@@ -115,7 +121,7 @@ public final class RequestTrackerManager implements Closeable {
                 if (lastTrackingFileUpdate.isAfter(Instant.EPOCH)) {
                     LOGGER.trace("File {} has been deleted, unfollowing all devices", TRACK_PATH);
                     lastTrackingFileUpdate = Instant.EPOCH;
-                    requestTrackers.values().forEach(requestTracker -> requestTracker.setAddressToFollow(ImmutableSet.of()));
+                    setAddressToFollow(ImmutableSet.of());
                 } else {
                     LOGGER.trace("File {} does no exist", TRACK_PATH);
                 }
@@ -123,6 +129,11 @@ public final class RequestTrackerManager implements Closeable {
         } catch (Exception e) {
             LOGGER.warn("Error while loading tracking devices", e);
         }
+    }
+
+    private void setAddressToFollow(ImmutableSet<String> addressesToFollow) {
+        this.addressesToFollow.set(addressesToFollow);
+        requestTrackers.values().forEach(requestTracker -> requestTracker.setAddressToFollow(addressesToFollow));
     }
 
     // (a - b) / a
@@ -156,11 +167,9 @@ public final class RequestTrackerManager implements Closeable {
     }
 
     private static String key(String key, String... prefix) {
-        return Stream.concat(
-                Arrays.stream(prefix)
-                        .map(RequestTrackerManager::wrap),
-                Stream.of(key))
+        return Stream.concat(Arrays.stream(prefix), Stream.of(key))
                 .map(String::toUpperCase)
+                .map(RequestTrackerManager::wrap)
                 .reduce((s1, s2) -> s1 + " " + s2)
                 .orElse("");
     }
