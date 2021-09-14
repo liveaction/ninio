@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 public class MaxCounterMetric implements LongMetric {
     private final String name;
     private final LongAdder current = new LongAdder();
-    private Long max = Long.MIN_VALUE;
+    private long max = Long.MIN_VALUE;
 
     public MaxCounterMetric(String... tags) {
         name = Arrays.stream(tags)
