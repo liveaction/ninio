@@ -2,6 +2,8 @@ package com.davfx.ninio.snmp;
 
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Connecter;
+import com.davfx.ninio.core.RequestTracker;
+import com.davfx.ninio.core.RequestTrackerManager;
 import com.davfx.ninio.core.SendCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 public final class AuthRemoteEnginePendingRequestManager {
+
+    private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("OUT", "AUTH", "V3");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthRemoteEnginePendingRequestManager.class);
 
@@ -67,8 +71,10 @@ public final class AuthRemoteEnginePendingRequestManager {
         }
 
         for (AuthRemoteEnginePendingRequestManager.PendingRequest r : pendingRequests) {
+
             switch (r.request) {
                 case GET: {
+                    AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing GET v3: %s:%s", v, r.oid));
                     Version3PacketBuilder builder = Version3PacketBuilder.get(engine, r.contextName, r.instanceId, r.oid);
                     ByteBuffer b = builder.getBuffer();
                     LOGGER.trace("Writing GET v3: {} #{}, packet size = {}", r.oid, r.instanceId, b.remaining());
@@ -76,6 +82,7 @@ public final class AuthRemoteEnginePendingRequestManager {
                     break;
                 }
                 case GETNEXT: {
+                    AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing GETNEXT v3: %s:%s", v, r.oid));
                     Version3PacketBuilder builder = Version3PacketBuilder.getNext(engine, r.contextName, r.instanceId, r.oid);
                     ByteBuffer b = builder.getBuffer();
                     LOGGER.trace("Writing GETNEXT v3: {} #{}, packet size = {}", r.oid, r.instanceId, b.remaining());
@@ -83,6 +90,7 @@ public final class AuthRemoteEnginePendingRequestManager {
                     break;
                 }
                 case GETBULK: {
+                    AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing GETBULK v3: %s:%s", v, r.oid));
                     Version3PacketBuilder builder = Version3PacketBuilder.getBulk(engine, r.contextName, r.instanceId, r.oid, SnmpClient.BULK_SIZE);
                     ByteBuffer b = builder.getBuffer();
                     LOGGER.trace("Writing GETBULK v3: {} #{}, packet size = {}", r.oid, r.instanceId, b.remaining());
