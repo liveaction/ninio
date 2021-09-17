@@ -2,9 +2,9 @@ package com.davfx.ninio.snmp;
 
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.RequestTracker;
-import com.davfx.ninio.core.RequestTrackerManager;
 import com.davfx.ninio.core.SendCallback;
+import com.davfx.ninio.core.supervision.tracking.RequestTracker;
+import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
