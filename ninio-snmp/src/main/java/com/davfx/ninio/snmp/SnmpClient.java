@@ -5,6 +5,8 @@ import com.davfx.ninio.core.Connecter;
 import com.davfx.ninio.core.Connection;
 import com.davfx.ninio.core.NinioBuilder;
 import com.davfx.ninio.core.NinioProvider;
+import com.davfx.ninio.core.RequestTracker;
+import com.davfx.ninio.core.RequestTrackerManager;
 import com.davfx.ninio.core.SendCallback;
 import com.davfx.ninio.core.UdpSocket;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
@@ -31,6 +33,8 @@ public final class SnmpClient implements SnmpConnecter {
 
 	private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(SnmpClient.class.getPackage().getName());
 
+	private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("OUT", "AUTH", "V2");
+
 	public static final int DEFAULT_PORT = 161;
 
 	public static final int DEFAULT_TRAP_PORT = 162;
@@ -43,17 +47,17 @@ public final class SnmpClient implements SnmpConnecter {
 
 		Builder with(NinioBuilder<Connecter> connecterFactory);
 	}
-	
+
 	public static Builder builder() {
 		return new Builder() {
 			private NinioBuilder<Connecter> connecterFactory = UdpSocket.builder();
-			
+
 			@Deprecated
 			@Override
 			public Builder with(Executor executor) {
 				return this;
 			}
-			
+
 			@Override
 			public Builder with(NinioBuilder<Connecter> connecterFactory) {
 				this.connecterFactory = connecterFactory;
@@ -66,11 +70,11 @@ public final class SnmpClient implements SnmpConnecter {
 			}
 		};
 	}
-	
+
 	private final Executor executor;
 
 	private final Connecter connecter;
-	
+
 	private final InstanceMapper instanceMapper;
 
 	private final RequestIdProvider requestIdProvider = new RequestIdProvider();
@@ -83,7 +87,7 @@ public final class SnmpClient implements SnmpConnecter {
 		this.authCache = AuthCache.get();
 		instanceMapper = new InstanceMapper(requestIdProvider);
 	}
-	
+
 	@Override
 	public SnmpRequestBuilder request() {
 		return new SnmpRequestBuilder() {
@@ -92,7 +96,7 @@ public final class SnmpClient implements SnmpConnecter {
 			private Address address;
 			private Oid oid;
 			private List<SnmpResult> trap = null;
-			
+
 			@Override
 			public SnmpRequestBuilder community(String community) {
 				this.community = community;
@@ -103,16 +107,16 @@ public final class SnmpClient implements SnmpConnecter {
 				this.authRemoteSpecification = authRemoteSpecification;
 				return this;
 			}
-			
+
 			private Instance instance = null;
-			
+
 			@Override
 			public SnmpRequestBuilder build(Address address, Oid oid) {
 				this.address = address;
 				this.oid = oid;
 				return this;
 			}
-			
+
 			@Override
 			public void cancel() {
 				// Deprecated
@@ -125,7 +129,7 @@ public final class SnmpClient implements SnmpConnecter {
 					}
 				});
 			}
-			
+
 			@Override
 			public SnmpRequestBuilder add(Oid oid, String value) {
 				if (trap == null) {
@@ -149,7 +153,7 @@ public final class SnmpClient implements SnmpConnecter {
 						if (instance != null) {
 							throw new IllegalStateException();
 						}
-						
+
 						instance = new Instance(connecter, instanceMapper, o, contextName, a, type, c, t);
 
 						AuthRemoteEnginePendingRequestManager authRemoteEnginePendingRequestManager = null;
@@ -161,7 +165,7 @@ public final class SnmpClient implements SnmpConnecter {
 								}
 							}
 							authCache.auths.put(a, auth);
-							
+
 							EncryptionEngineKey encryptionEngineKey = new EncryptionEngineKey(auth.authDigestAlgorithm, auth.privEncryptionAlgorithm);
 							EncryptionEngine encryptionEngine = authCache.encryptionEngines.getIfPresent(encryptionEngineKey);
 							if (encryptionEngine == null) {
@@ -240,7 +244,7 @@ public final class SnmpClient implements SnmpConnecter {
 							LOGGER.error("Invalid packet", e);
 							return;
 						}
-						
+
 						if (authRemoteEnginePendingRequestManager != null) {
 							if (ready && (errorStatus == BerConstants.ERROR_STATUS_AUTHENTICATION_NOT_SYNCED)) {
 								authRemoteEnginePendingRequestManager.reset();
@@ -249,12 +253,12 @@ public final class SnmpClient implements SnmpConnecter {
 							authRemoteEnginePendingRequestManager.discoverIfNecessary(address, connecter);
 							authRemoteEnginePendingRequestManager.sendPendingRequestsIfReady(address, connecter);
 						}
-						
+
 						instanceMapper.handle(address, instanceId, errorStatus, errorIndex, results);
 					}
 				});
 			}
-			
+
 			@Override
 			public void failed(final IOException ioe) {
 				executor.execute(new Runnable() {
@@ -263,19 +267,19 @@ public final class SnmpClient implements SnmpConnecter {
 						instanceMapper.fail(ioe);
 					}
 				});
-				
+
 				if (callback != null) {
 					callback.failed(ioe);
 				}
 			}
-			
+
 			@Override
 			public void connected(Address address) {
 				if (callback != null) {
 					callback.connected(address);
 				}
 			}
-			
+
 			@Override
 			public void closed() {
 				executor.execute(new Runnable() {
@@ -284,14 +288,14 @@ public final class SnmpClient implements SnmpConnecter {
 						instanceMapper.fail(new IOException("Closed"));
 					}
 				});
-				
+
 				if (callback != null) {
 					callback.closed();
 				}
 			}
 		});
 	}
-	
+
 	@Override
 	public void close() {
 		executor.execute(new Runnable() {
@@ -300,39 +304,39 @@ public final class SnmpClient implements SnmpConnecter {
 				instanceMapper.close();
 			}
 		});
-		
+
 		connecter.close();
 	}
-	
+
 	private static final class InstanceMapper {
 		private final RequestIdProvider requestIdProvider;
 		private final Map<Integer, Instance> instances = new HashMap<>();
-		
+
 		public InstanceMapper(RequestIdProvider requestIdProvider) {
 			this.requestIdProvider = requestIdProvider;
 		}
-		
+
 		public void map(Instance instance) {
 			instances.remove(instance.instanceId);
-			
+
 			int instanceId = requestIdProvider.get();
 
 			if (instances.containsKey(instanceId)) {
 				LOGGER.warn("The maximum number of simultaneous request has been reached");
 				return;
 			}
-			
+
 			instances.put(instanceId, instance);
-			
+
 			LOGGER.trace("New instance ID = {}", instanceId);
 			instance.instanceId = instanceId;
 		}
-		
+
 		public void unmap(Instance instance) {
 			instances.remove(instance.instanceId);
 			instance.instanceId = RequestIdProvider.IGNORE_ID;
 		}
-		
+
 		public void close() {
 			for (Instance i : instances.values()) {
 				i.close();
@@ -364,7 +368,7 @@ public final class SnmpClient implements SnmpConnecter {
 				}
 				return;
 			}
-			
+
 			Instance i = instances.remove(instanceId);
 			if (i == null) {
 				return;
@@ -372,13 +376,13 @@ public final class SnmpClient implements SnmpConnecter {
 			i.handle(errorStatus, errorIndex, results);
 		}
 	}
-	
+
 	private static final class Instance {
 		private final Connecter connector;
 		private final InstanceMapper instanceMapper;
-		
+
 		private SnmpReceiver receiver;
-		
+
 		private final Oid requestOid;
 		private final String requestContextName;
 		public int instanceId = RequestIdProvider.IGNORE_ID;
@@ -387,34 +391,34 @@ public final class SnmpClient implements SnmpConnecter {
 		private final String community;
 		private final SnmpCallType snmpCallType;
 		private AuthRemoteEnginePendingRequestManager authRemoteEnginePendingRequestManager = null;
-		
+
 		private final Iterable<SnmpResult> trap;
 
 		public Instance(Connecter connector, InstanceMapper instanceMapper, Oid requestOid, String requestContextName, Address address, SnmpCallType snmpCallType, String community, Iterable<SnmpResult> trap) {
 			this.connector = connector;
 			this.instanceMapper = instanceMapper;
-			
+
 			this.requestOid = requestOid;
 			this.requestContextName = requestContextName;
-			
+
 			this.address = address;
 			this.snmpCallType = snmpCallType;
 			this.community = community;
-			
+
 			this.trap = trap;
 		}
-		
+
 		public void launch() {
 			if (receiver != null) {
 				instanceMapper.map(this);
 			}
 			write();
 		}
-		
+
 		public void close() {
 			receiver = null;
 		}
-		
+
 		public void cancel() {
 			if (authRemoteEnginePendingRequestManager != null) {
 				authRemoteEnginePendingRequestManager.clearPendingRequests();
@@ -433,9 +437,10 @@ public final class SnmpClient implements SnmpConnecter {
 					fail(ioe);
 				}
 			};
-			
+
 			if (authRemoteEnginePendingRequestManager == null) {
-				switch (snmpCallType) { 
+                AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing %s v2: %s:%s", snmpCallType, v, requestOid));
+				switch (snmpCallType) {
 					case GET: {
 						Version2cPacketBuilder builder = Version2cPacketBuilder.get(community, instanceId, requestOid);
 						ByteBuffer b = builder.getBuffer();
@@ -472,14 +477,14 @@ public final class SnmpClient implements SnmpConnecter {
 				authRemoteEnginePendingRequestManager.sendPendingRequestsIfReady(address, connector);
 			}
 		}
-	
+
 		public void fail(IOException e) {
 			if (receiver != null) {
 				receiver.failed(e);
 			}
 			receiver = null;
 		}
-		
+
 		private void handle(int errorStatus, int errorIndex, Iterable<SnmpResult> results) {
 			if (requestOid == null) {
 				return;
@@ -494,7 +499,7 @@ public final class SnmpClient implements SnmpConnecter {
 				fail(new IOException("Authentication failed"));
 				return;
 			}
-			
+
 			if (errorStatus == BerConstants.ERROR_STATUS_TIMEOUT) {
 				fail(new IOException("Timeout"));
 				return;
