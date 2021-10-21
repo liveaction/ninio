@@ -1,9 +1,13 @@
 package com.davfx.ninio.core.supervision.metrics;
 
-public interface LongMetric extends Metric {
+public abstract class LongMetric extends Metric {
+
+    public LongMetric(String name) {
+        super(name);
+    }
 
     /**
      * This value can be used to perform computations and create composite metrics
      */
-    Long value();
+    public abstract Long value();
 }

@@ -82,9 +82,9 @@ public final class RawSocket implements Connecter {
         this.protocol = protocol;
         this.bindAddress = bindAddress;
         String prefix = "RAW";
-        outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
-        inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
-        DisplayableMetricsManager.instance().percent(outTracker, inTracker, "lost", prefix);
+        outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
+        inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
+        DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
     }
 
     @Override

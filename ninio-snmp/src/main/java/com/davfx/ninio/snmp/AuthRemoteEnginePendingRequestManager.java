@@ -15,7 +15,7 @@ import java.util.List;
 
 public final class AuthRemoteEnginePendingRequestManager {
 
-    private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("OUT", "AUTH", "V3");
+    private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("AUTH", "V3", "OUT");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthRemoteEnginePendingRequestManager.class);
 

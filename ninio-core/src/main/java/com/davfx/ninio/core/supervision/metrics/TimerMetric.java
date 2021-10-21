@@ -4,29 +4,19 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Timer implementation using the dropwizard implementation
  */
-public class TimerMetric extends Timer implements Metric {
+public class TimerMetric extends Metric {
     private Timer timer;
-    private final String name;
 
-    public TimerMetric(String... tags) {
+    public TimerMetric(String name) {
+        super(name);
         this.timer = new Timer();
-        name = Arrays.stream(tags)
-                .map(Metric::wrapTag)
-                .collect(Collectors.joining(" "));
-    }
-
-    @Override
-    public String name() {
-        return name;
     }
 
     @Override
@@ -60,61 +50,50 @@ public class TimerMetric extends Timer implements Metric {
 
     // Override all Timer methods to use our Timer
 
-    @Override
     public void update(long duration, TimeUnit unit) {
         timer.update(duration, unit);
     }
 
-    @Override
     public void update(Duration duration) {
         timer.update(duration);
     }
 
-    @Override
     public <T> T time(Callable<T> event) throws Exception {
         return timer.time(event);
     }
 
-    @Override
     public <T> T timeSupplier(Supplier<T> event) {
         return timer.timeSupplier(event);
     }
 
-    @Override
     public void time(Runnable event) {
         timer.time(event);
     }
 
-    public Context time() {
+    public Timer.Context time() {
         return timer.time();
     }
 
-    @Override
     public long getCount() {
         return timer.getCount();
     }
 
-    @Override
     public double getFifteenMinuteRate() {
         return timer.getFifteenMinuteRate();
     }
 
-    @Override
     public double getFiveMinuteRate() {
         return timer.getFiveMinuteRate();
     }
 
-    @Override
     public double getMeanRate() {
         return timer.getMeanRate();
     }
 
-    @Override
     public double getOneMinuteRate() {
         return timer.getOneMinuteRate();
     }
 
-    @Override
     public Snapshot getSnapshot() {
         return timer.getSnapshot();
     }

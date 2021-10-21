@@ -116,12 +116,7 @@ public final class TcpSocket implements Connecter {
         this.byteBufferAllocator = byteBufferAllocator;
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
-        DisplayableMetricsManager.instance().addIfAbsent(new Metric() {
-            @Override
-            public String name() {
-                return "TCP";
-            }
-
+        DisplayableMetricsManager.instance().addIfAbsent(new Metric("TCP") {
             @Override
             public String getValue() {
                 long currentMax = max.getAndSet(0L);

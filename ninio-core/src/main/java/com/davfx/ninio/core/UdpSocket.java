@@ -186,9 +186,9 @@ public final class UdpSocket implements Connecter {
         this.byteBufferAllocator = byteBufferAllocator;
         this.bindAddress = bindAddress;
         String prefix = "UDP";
-        inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
-        outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
-        DisplayableMetricsManager.instance().percent(outTracker, inTracker, "lost", prefix);
+        inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
+        outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
+        DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
     }
 
     @Override

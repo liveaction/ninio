@@ -15,6 +15,7 @@ import org.slf4j.MarkerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -84,15 +85,15 @@ public class DisplayableMetricsManager {
     }
 
     public CounterMetric counter(String... tags) {
-        return addIfAbsent(new CounterMetric(tags));
+        return addIfAbsent(new CounterMetric(key(tags)));
     }
 
     public MaxCounterMetric maxCounter(String... tags) {
-        return addIfAbsent(new MaxCounterMetric(tags));
+        return addIfAbsent(new MaxCounterMetric(key(tags)));
     }
 
     public TimerMetric timer(String... tags) {
-        return addIfAbsent(new TimerMetric(tags));
+        return addIfAbsent(new TimerMetric(key(tags)));
     }
 
     public RequestTracker tracker(RequestTracker tracker) {
@@ -100,7 +101,7 @@ public class DisplayableMetricsManager {
     }
 
     public PercentMetric percent(LongMetric trackerA, LongMetric trackerB, String... tags) {
-        return addIfAbsent(new PercentMetric(trackerA, trackerB, tags));
+        return addIfAbsent(new PercentMetric(trackerA, trackerB, key(tags)));
     }
 
     private void display(boolean clear) {
@@ -114,6 +115,14 @@ public class DisplayableMetricsManager {
                 }
             }
         }
+    }
+
+    public static String key(String... prefix) {
+        return Arrays.stream(prefix)
+                .map(String::toUpperCase)
+                .map(Metric::wrapTag)
+                .reduce((s1, s2) -> s1 + " " + s2)
+                .orElse("");
     }
 
     public static MetricRegistry getMetricRegistry() {

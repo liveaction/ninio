@@ -418,9 +418,9 @@ public final class ProxyClient implements ProxyProvider {
 
             innerConnection = new InnerConnection();
             String prefix = "proxy-client";
-            inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
-            outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
-            DisplayableMetricsManager.instance().percent(outTracker, inTracker, "lost", prefix);
+            inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
+            outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
+            DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
 
             proxyExecutor.execute(() -> {
                 innerConnection.connectionId = nextConnectionId;

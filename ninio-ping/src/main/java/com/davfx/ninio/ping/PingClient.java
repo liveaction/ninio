@@ -75,9 +75,9 @@ public final class PingClient implements PingConnecter {
         this.connecter = connecter;
         clientIdentifier = Identifiers.identifier();
         String prefix = "PING";
-        outTracker = RequestTrackerManager.instance().getTracker("out", prefix);
-        inTracker = RequestTrackerManager.instance().getTracker("in", prefix);
-        DisplayableMetricsManager.instance().percent(outTracker, inTracker, "lost", prefix);
+        outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
+        inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
+        DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
     }
 
     private static void closeSendCallbacks(Map<Address, PingReceiver> receivers) {

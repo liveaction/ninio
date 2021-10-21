@@ -15,14 +15,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 public final class RequestTrackerManager implements Closeable {
 
@@ -52,8 +50,8 @@ public final class RequestTrackerManager implements Closeable {
         executor.scheduleAtFixedRate(this::loadTrackingDevices, 2, 5, TimeUnit.SECONDS);
     }
 
-    public RequestTracker getTracker(String trackerName, String... tags) {
-        return requestTrackers.computeIfAbsent(key(trackerName, tags), name -> {
+    public RequestTracker getTracker(String... tags) {
+        return requestTrackers.computeIfAbsent(DisplayableMetricsManager.key(tags), name -> {
             RequestTracker requestTracker = new RequestTracker(name);
             requestTracker.setAddressToFollow(addressesToFollow.get());
             return DisplayableMetricsManager.instance().tracker(requestTracker);
@@ -90,20 +88,6 @@ public final class RequestTrackerManager implements Closeable {
     private void setAddressToFollow(ImmutableSet<String> addressesToFollow) {
         this.addressesToFollow.set(addressesToFollow);
         requestTrackers.values().forEach(requestTracker -> requestTracker.setAddressToFollow(addressesToFollow));
-    }
-
-    private static String key(String key, String... prefix) {
-        return Stream.concat(
-                Arrays.stream(prefix),
-                Stream.of(key))
-                .map(String::toUpperCase)
-                .map(RequestTrackerManager::wrap)
-                .reduce((s1, s2) -> s1 + " " + s2)
-                .orElse("");
-    }
-
-    private static String wrap(String val) {
-        return '[' + val + ']';
     }
 
     @Override

@@ -33,7 +33,7 @@ public final class SnmpClient implements SnmpConnecter {
 
 	private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(SnmpClient.class.getPackage().getName());
 
-	private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("OUT", "AUTH", "V2");
+	private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("AUTH", "V2", "OUT");
 
 	public static final int DEFAULT_PORT = 161;
 

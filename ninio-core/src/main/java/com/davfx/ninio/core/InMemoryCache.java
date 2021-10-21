@@ -94,9 +94,9 @@ public final class InMemoryCache {
 
         public InnerConnecter(String name, double dataExpiration, double requestExpiration, Interpreter<T> interpreter, Connecter wrappee) {
             String prefix = name + "_cache";
-            this.cacheOutputCounter = RequestTrackerManager.instance().getTracker("out", prefix);
-            this.cacheInputCounter = RequestTrackerManager.instance().getTracker("in", prefix);
-            DisplayableMetricsManager.instance().percent(cacheOutputCounter, cacheInputCounter, "lost", prefix);
+            this.cacheOutputCounter = RequestTrackerManager.instance().getTracker(prefix, "out");
+            this.cacheInputCounter = RequestTrackerManager.instance().getTracker(prefix, "in");
+            DisplayableMetricsManager.instance().percent(cacheOutputCounter, cacheInputCounter, prefix, "lost");
             this.dataExpiration = dataExpiration;
             this.requestExpiration = Math.min(dataExpiration, requestExpiration);
             this.interpreter = interpreter;

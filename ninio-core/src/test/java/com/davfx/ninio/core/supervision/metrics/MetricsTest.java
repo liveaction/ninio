@@ -3,19 +3,17 @@ package com.davfx.ninio.core.supervision.metrics;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 public class MetricsTest {
 
-    private final String expectedName = "[TEST]";
     private final String actualName = "test";
 
     @Test
     public void counterTest() {
         CounterMetric c = new CounterMetric(actualName);
 
-        assertEquals(c.name(), expectedName);
+        assertEquals(c.name(), actualName);
 
         c.inc();
         assertEquals((long) c.value(), 1L);
@@ -37,7 +35,7 @@ public class MetricsTest {
     public void maxCounterTest() {
         MaxCounterMetric c = new MaxCounterMetric(actualName);
 
-        assertEquals(c.name(), expectedName);
+        assertEquals(c.name(), actualName);
 
         c.inc();
         assertEquals((long) c.value(), 1L);
@@ -65,7 +63,7 @@ public class MetricsTest {
     public void percentTest() {
         CounterMetric c1 = new CounterMetric("c1");
         CounterMetric c2 = new CounterMetric("c2");
-        PercentMetric percent = new PercentMetric(c1, c2);
+        PercentMetric percent = new PercentMetric(c1, c2, "test");
 
         c1.add(100L);
 

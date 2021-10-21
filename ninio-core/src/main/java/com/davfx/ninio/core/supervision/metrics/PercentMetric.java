@@ -1,22 +1,16 @@
 package com.davfx.ninio.core.supervision.metrics;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
 /**
  * Percentage between 2 Metrics: (metricA - metricB) / metricA
  */
-public final class PercentMetric implements LongMetric {
+public final class PercentMetric extends LongMetric {
     public final LongMetric metricA;
     public final LongMetric metricB;
-    public final String name;
 
-    public PercentMetric(LongMetric metricA, LongMetric metricB, String... tags) {
+    public PercentMetric(LongMetric metricA, LongMetric metricB, String name) {
+        super(name);
         this.metricA = metricA;
         this.metricB = metricB;
-        name = Arrays.stream(tags)
-                .map(Metric::wrapTag)
-                .collect(Collectors.joining(" "));
     }
 
     @Override
@@ -27,11 +21,6 @@ public final class PercentMetric implements LongMetric {
             return null;
         }
         return format(percent(av, bv));
-    }
-
-    @Override
-    public String name() {
-        return name;
     }
 
     @Override

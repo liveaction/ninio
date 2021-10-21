@@ -1,21 +1,29 @@
 package com.davfx.ninio.core.supervision.metrics;
 
-public interface Metric {
+public abstract class Metric {
+
+    private final String name;
+
+    public Metric(String name) {
+        this.name = name;
+    }
 
     /**
      * This name will be used in reporting tools to identify the metric
      */
-    String name();
+    public String name(){
+        return name;
+    }
 
     /**
      * The value that will be displayed by reporting tools
      */
-    String getValue();
+    public abstract String getValue();
 
     /**
      * resets the Metric to its default state
      */
-    void reset();
+    public abstract void reset();
 
     /**
      * Format a String to be considered as a Tag by slf4j
