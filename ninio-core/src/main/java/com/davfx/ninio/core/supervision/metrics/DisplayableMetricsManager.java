@@ -63,9 +63,13 @@ public class DisplayableMetricsManager {
                 displayStart, SUPERVISION_DISPLAY.toMillis(), TimeUnit.MILLISECONDS);
 
         executor.scheduleAtFixedRate(() -> {
-            display(true);
-            LOGGER.debug("Clear Trackers");
-            metricsByName.values().forEach(Metric::reset);
+            try {
+                display(true);
+                LOGGER.debug("Clear Trackers");
+                metricsByName.values().forEach(Metric::reset);
+            } catch (Throwable t) {
+                LOGGER.info("Error happened while clearing trackers", t);
+            }
         }, clearStart, SUPERVISION_CLEAR.toMillis(), TimeUnit.MILLISECONDS);
     }
 
