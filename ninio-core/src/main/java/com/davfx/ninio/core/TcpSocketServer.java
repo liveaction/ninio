@@ -104,7 +104,7 @@ public final class TcpSocketServer implements Listener {
         this.queue = queue;
         this.byteBufferAllocator = byteBufferAllocator;
         this.bindAddress = bindAddress;
-        DisplayableMetricsManager.instance().addIfAbsent(new Metric("TCPSERVER") {
+        DisplayableMetricsManager.instance().addIfAbsent(new Metric("[TCPSERVER]") {
             @Override
             public String getValue() {
                 long currentMax = max.getAndSet(0L);
