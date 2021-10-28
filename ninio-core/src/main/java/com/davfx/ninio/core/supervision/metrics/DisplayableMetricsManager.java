@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class aims to regularly display metrics in a centralized way.
@@ -33,13 +34,14 @@ public class DisplayableMetricsManager {
     private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(Address.class.getPackage().getName());
     private static final Duration SUPERVISION_DISPLAY = Duration.ofMillis((long) ConfigUtils.getDuration(CONFIG, "supervision.metrics.display") * 1000);
     private static final Duration SUPERVISION_CLEAR = Duration.ofMillis((long) ConfigUtils.getDuration(CONFIG, "supervision.metrics.clear") * 1000);
+    private static final DisplayableMetricsManager INSTANCE = new DisplayableMetricsManager();
+
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("simple-metrics")
             .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught error in thread {}", t, e))
             .build());
     private final MetricRegistry metricRegistry;
 
     private final ConcurrentMap<String, Metric> metricsByName = Maps.newConcurrentMap();
-    private static final DisplayableMetricsManager INSTANCE = new DisplayableMetricsManager();
 
     public static DisplayableMetricsManager instance() {
         return INSTANCE;
@@ -56,21 +58,24 @@ public class DisplayableMetricsManager {
 
         // schedule all custom displays
         Instant now = Instant.now();
-        long clearStart = SUPERVISION_CLEAR.toMillis() - (now.toEpochMilli() % SUPERVISION_CLEAR.toMillis());
-        long displayStart = SUPERVISION_DISPLAY.toMillis() - (now.toEpochMilli() % SUPERVISION_DISPLAY.toMillis());
+        long displayStart = 1 + SUPERVISION_DISPLAY.toMillis() - (now.toEpochMilli() % SUPERVISION_DISPLAY.toMillis());
 
-        executor.scheduleAtFixedRate(() -> display(false),
-                displayStart, SUPERVISION_DISPLAY.toMillis(), TimeUnit.MILLISECONDS);
-
+        AtomicLong previousDisplaySlot = new AtomicLong();
         executor.scheduleAtFixedRate(() -> {
-            try {
-                display(true);
-                LOGGER.debug("Clear Trackers");
-                metricsByName.values().forEach(Metric::reset);
-            } catch (Throwable t) {
-                LOGGER.info("Error happened while clearing trackers", t);
-            }
-        }, clearStart, SUPERVISION_CLEAR.toMillis(), TimeUnit.MILLISECONDS);
+                    try {
+                        long currentSlot = Instant.now().toEpochMilli() / SUPERVISION_CLEAR.toMillis();
+                        long previousSlot = previousDisplaySlot.getAndSet(currentSlot);
+                        boolean clear = previousSlot != 0 && currentSlot != previousSlot;
+                        display(clear);
+                        if (clear) {
+                            LOGGER.debug("Clear metrics");
+                            metricsByName.values().forEach(Metric::reset);
+                        }
+                    } catch (Throwable t) {
+                        LOGGER.warn("Error happened while displaying metrics", t);
+                    }
+                },
+                displayStart, SUPERVISION_DISPLAY.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     public <T extends Metric> T addIfAbsent(T m) {

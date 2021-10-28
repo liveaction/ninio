@@ -6,6 +6,11 @@ public abstract class LongMetric extends Metric {
         super(name);
     }
 
+    @Override
+    public String getValue() {
+        return Long.toString(value());
+    }
+
     /**
      * This value can be used to perform computations and create composite metrics
      */

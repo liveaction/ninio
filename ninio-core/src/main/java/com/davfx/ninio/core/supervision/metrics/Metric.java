@@ -11,7 +11,7 @@ public abstract class Metric {
     /**
      * This name will be used in reporting tools to identify the metric
      */
-    public String name(){
+    public final String name(){
         return name;
     }
 
