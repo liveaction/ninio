@@ -4,7 +4,7 @@
 
     <groupId>com.davfx.ninio</groupId>
     <artifactId>ninio</artifactId>
-    <version>4.2.4</version>
+    <version>4.3.0</version>
 
     <packaging>pom</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
@@ -46,6 +46,7 @@
 
     <properties>
         <jdk.version>1.8</jdk.version>
+        <metrics-core.version>4.2.3</metrics-core.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -132,6 +133,12 @@
                 <artifactId>ninio-csv</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${metrics-core.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -139,7 +146,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>28.0-jre</version>
+            <version>30.1.1-jre</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

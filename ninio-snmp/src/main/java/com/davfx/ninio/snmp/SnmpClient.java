@@ -5,10 +5,10 @@ import com.davfx.ninio.core.Connecter;
 import com.davfx.ninio.core.Connection;
 import com.davfx.ninio.core.NinioBuilder;
 import com.davfx.ninio.core.NinioProvider;
-import com.davfx.ninio.core.RequestTracker;
-import com.davfx.ninio.core.RequestTrackerManager;
 import com.davfx.ninio.core.SendCallback;
 import com.davfx.ninio.core.UdpSocket;
+import com.davfx.ninio.core.supervision.tracking.RequestTracker;
+import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
 import com.davfx.ninio.util.ConfigUtils;
 import com.google.common.collect.ImmutableList;
@@ -33,7 +33,7 @@ public final class SnmpClient implements SnmpConnecter {
 
 	private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(SnmpClient.class.getPackage().getName());
 
-	private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("OUT", "AUTH", "V2");
+	private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("AUTH", "V2", "OUT");
 
 	public static final int DEFAULT_PORT = 161;
 

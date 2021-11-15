@@ -1,5 +1,8 @@
 package com.davfx.ninio.core;
 
+import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
+import com.davfx.ninio.core.supervision.tracking.RequestTracker;
+import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.util.DateUtils;
 import com.davfx.ninio.util.MemoryCache;
 import org.slf4j.Logger;
@@ -14,7 +17,7 @@ public final class InMemoryCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryCache.class);
 
-    public static interface Builder<T> extends NinioBuilder<Connecter> {
+    public interface Builder<T> extends NinioBuilder<Connecter> {
         Builder<T> dataExpiration(double dataExpiration);
 
         Builder<T> requestExpiration(double requestExpiration);
@@ -91,9 +94,9 @@ public final class InMemoryCache {
 
         public InnerConnecter(String name, double dataExpiration, double requestExpiration, Interpreter<T> interpreter, Connecter wrappee) {
             String prefix = name + "_cache";
-            this.cacheOutputCounter = RequestTrackerManager.instance().getTracker("out", prefix);
-            this.cacheInputCounter = RequestTrackerManager.instance().getTracker("in", prefix);
-            RequestTrackerManager.instance().relation("lost", new RequestTrackerManager.PercentRelation(cacheOutputCounter, cacheInputCounter), prefix);
+            this.cacheOutputCounter = RequestTrackerManager.instance().getTracker(prefix, "out");
+            this.cacheInputCounter = RequestTrackerManager.instance().getTracker(prefix, "in");
+            DisplayableMetricsManager.instance().percent(cacheOutputCounter, cacheInputCounter, prefix, "lost");
             this.dataExpiration = dataExpiration;
             this.requestExpiration = Math.min(dataExpiration, requestExpiration);
             this.interpreter = interpreter;
@@ -228,7 +231,7 @@ public final class InMemoryCache {
                 CacheByAddress<T> cache = cacheByDestinationAddress.get(address);
                 if (cache == null) {
                     LOGGER.trace("New cache (address = {}, expiration = {})", address, dataExpiration);
-                    cache = new CacheByAddress<T>(dataExpiration, requestExpiration);
+                    cache = new CacheByAddress<>(dataExpiration, requestExpiration);
                     cacheByDestinationAddress.put(address, cache);
                 }
 
@@ -243,7 +246,7 @@ public final class InMemoryCache {
                 }
 
                 if (subs == null) {
-                    subs = new DataCache<T>(now, requestExpiration);
+                    subs = new DataCache<>(now, requestExpiration);
                     cache.requestsByKey.put(context.key, subs);
                     send = true;
                     LOGGER.trace("New request (address = {}, key = {}, sub = {}) - {}", address, context.key, context.sub, cache.subToKey);
