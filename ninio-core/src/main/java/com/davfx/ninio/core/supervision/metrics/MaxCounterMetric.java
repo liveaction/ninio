@@ -12,7 +12,7 @@ public class MaxCounterMetric extends LongMetric {
 
     @Override
     public String getValue() {
-        return max == Long.MIN_VALUE ? null : Long.toString(max);
+        return max == Long.MIN_VALUE ? "0" : Long.toString(max);
     }
 
     @Override
@@ -23,7 +23,7 @@ public class MaxCounterMetric extends LongMetric {
 
     @Override
     public Long value() {
-        return max == Long.MIN_VALUE ? null : max;
+        return max == Long.MIN_VALUE ? 0L : max;
     }
 
     public void add(long v) {
