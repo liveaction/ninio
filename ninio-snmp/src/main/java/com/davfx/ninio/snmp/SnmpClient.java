@@ -474,6 +474,7 @@ public final class SnmpClient implements SnmpConnecter {
 				}
 			} else {
 				authRemoteEnginePendingRequestManager.registerPendingRequest(new AuthRemoteEnginePendingRequestManager.PendingRequest(snmpCallType, instanceId, requestOid, requestContextName, /*trap, */sendCallback));
+				authRemoteEnginePendingRequestManager.discoverIfNecessary(address, connector);
 				authRemoteEnginePendingRequestManager.sendPendingRequestsIfReady(address, connector);
 			}
 		}
