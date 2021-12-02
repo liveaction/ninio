@@ -16,6 +16,7 @@ import java.util.List;
 public final class AuthRemoteEnginePendingRequestManager {
 
     private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("AUTH", "V3", "OUT");
+    private final static RequestTracker DISCOVER_TRACKER_OUT = RequestTrackerManager.instance().getTracker("DISCOVER", "V3", "OUT");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthRemoteEnginePendingRequestManager.class);
 
@@ -40,6 +41,7 @@ public final class AuthRemoteEnginePendingRequestManager {
             Version3PacketBuilder builder = Version3PacketBuilder.get(engine, null, RequestIdProvider.IGNORE_ID, null);
             ByteBuffer b = builder.getBuffer();
             LOGGER.trace("Writing discover GET v3: #{}, packet size = {}", RequestIdProvider.IGNORE_ID, b.remaining());
+            DISCOVER_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Sending discover GET v3: %s", v));
             connector.send(address, b, new SendCallback() {
                 @Override
                 public void sent() {
