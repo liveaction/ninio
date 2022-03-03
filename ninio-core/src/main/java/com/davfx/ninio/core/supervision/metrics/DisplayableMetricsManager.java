@@ -93,6 +93,10 @@ public class DisplayableMetricsManager {
         }
     }
 
+    public void remove(String metricName) {
+        metricsByName.remove(metricName);
+    }
+
     public CounterMetric counter(String... tags) {
         return addIfAbsent(new CounterMetric(key(tags)));
     }
