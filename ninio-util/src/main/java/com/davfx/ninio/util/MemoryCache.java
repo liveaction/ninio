@@ -1,13 +1,15 @@
 package com.davfx.ninio.util;
 
+import com.typesafe.config.Config;
+
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.typesafe.config.Config;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 public final class MemoryCache<K, V> {
 	
@@ -176,38 +178,25 @@ public final class MemoryCache<K, V> {
 		lastCheck = now;
 		
 		if (expirationAfterAccess > 0d) {
-			Iterator<Element<V>> i = map.values().iterator();
-			while (i.hasNext()) {
-				if ((now - i.next().accessTimestamp) > expirationAfterAccess) {
-					i.remove();
-				}
-			}
+			map.values().removeIf(vElement -> (now - vElement.accessTimestamp) > expirationAfterAccess);
 		}
 		if (expirationAfterWrite > 0d) {
-			Iterator<Element<V>> i = map.values().iterator();
-			while (i.hasNext()) {
-				if ((now - i.next().writeTimestamp) > expirationAfterWrite) {
-					i.remove();
-				}
-			}
+			map.values().removeIf(vElement -> (now - vElement.writeTimestamp) > expirationAfterWrite);
 		}
 	}
 	
-	public Iterable<K> keys() {
+	public Set<K> keys() {
 		check();
 
 		return map.keySet();
 	}
 
-	public Iterable<V> values() {
+	public List<V> values() {
 		check();
 		
-		return Iterables.transform(map.values(), new Function<Element<V>, V>() {
-			@Override
-			public V apply(Element<V> e) {
-				return e.v;
-			}
-		});
+		return map.values().stream()
+				.map(e -> e.v)
+				.collect(toImmutableList());
 	}
 	
 	private static final class InnerMapEntry<K, V> implements Map.Entry<K, V> {
@@ -240,14 +229,11 @@ public final class MemoryCache<K, V> {
 		}
 	}
 
-	public Iterable<Map.Entry<K, V>> entries() {
+	public List<Map.Entry<K, V>> entries() {
 		check();
 		
-		return Iterables.transform(map.entrySet(), new Function<Map.Entry<K, Element<V>>, Map.Entry<K, V>>() {
-			@Override
-			public Map.Entry<K, V> apply(Map.Entry<K, Element<V>> e) {
-				return new InnerMapEntry<K, V>(e);
-			}
-		});
+		return map.entrySet().stream()
+				.map(InnerMapEntry::new)
+				.collect(toImmutableList());
 	}
 }
