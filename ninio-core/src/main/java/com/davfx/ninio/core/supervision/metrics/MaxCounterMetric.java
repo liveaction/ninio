@@ -1,9 +1,9 @@
 package com.davfx.ninio.core.supervision.metrics;
 
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MaxCounterMetric extends LongMetric {
-    private final LongAdder current = new LongAdder();
+    private final AtomicLong current = new AtomicLong();
     private long max = Long.MIN_VALUE;
 
     public MaxCounterMetric(String name) {
@@ -17,8 +17,7 @@ public class MaxCounterMetric extends LongMetric {
 
     @Override
     public void reset() {
-        current.reset();
-        max = Long.MIN_VALUE;
+        max = current.get();
     }
 
     @Override
@@ -27,16 +26,16 @@ public class MaxCounterMetric extends LongMetric {
     }
 
     public void add(long v) {
-        current.add(v);
-        max = Long.max(max, current.sum());
+        long l = current.addAndGet(v);
+        max = Long.max(max, l);
     }
 
     public void inc() {
-        current.increment();
-        max = Long.max(max, current.sum());
+        long l = current.incrementAndGet();
+        max = Long.max(max, l);
     }
 
     public void dec() {
-        current.decrement();
+        current.decrementAndGet();
     }
 }

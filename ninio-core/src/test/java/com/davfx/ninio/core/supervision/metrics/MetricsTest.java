@@ -50,10 +50,10 @@ public class MetricsTest {
         assertEquals((long) c.value(), 10L);
 
         c.reset();
-        assertEquals((long)c.value(), 0L);
+        assertEquals((long) c.value(), 1L);
 
         c.inc();
-        assertEquals((long) c.value(), 1L);
+        assertEquals((long) c.value(), 2L);
 
 
 
