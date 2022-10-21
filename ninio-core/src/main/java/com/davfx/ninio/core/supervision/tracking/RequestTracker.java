@@ -1,6 +1,7 @@
 package com.davfx.ninio.core.supervision.tracking;
 
 import com.davfx.ninio.core.supervision.metrics.LongMetric;
+import com.davfx.ninio.util.LogTag;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ public final class RequestTracker extends LongMetric {
     public void track(String address, Function<String, String> logAction) {
         count.increment();
         if (addressToFollow.contains(address)) {
-            LOGGER.info("[TRACKING] {} {}", name(), logAction.apply(address));
+            LOGGER.info("{} {} {}", LogTag.TRACKING, name(), logAction.apply(address));
         }
     }
 

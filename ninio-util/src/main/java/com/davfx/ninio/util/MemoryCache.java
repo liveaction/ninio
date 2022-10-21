@@ -2,12 +2,13 @@ package com.davfx.ninio.util;
 
 import com.typesafe.config.Config;
 
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
@@ -73,7 +74,7 @@ public final class MemoryCache<K, V> {
 	private final int limit;
 	private final double checkTime;
 	private double lastCheck = 0d;
-	private final Map<K, Element<V>> map = new LinkedHashMap<>();
+	private final Map<K, Element<V>> map = new HashMap<>();
 	
 	private MemoryCache(double expirationAfterAccess, double expirationAfterWrite, int limit, double checkTime) {
 		this.expirationAfterAccess = expirationAfterAccess;
@@ -106,10 +107,9 @@ public final class MemoryCache<K, V> {
 			e.writeTimestamp = now;
 			e.accessTimestamp = now;
 			
-			map.remove(key);
-			map.put(key, e);
+			Element<V> previousElement = map.put(key, e);
 
-			if (limit > 0) {
+			if (limit > 0 && previousElement==null) { // if previousElement != null, the size has not increased
 				if (map.size() > limit) {
 					Iterator<Map.Entry<K, Element<V>>> i = map.entrySet().iterator();
 					i.next();
@@ -123,7 +123,7 @@ public final class MemoryCache<K, V> {
 	
 	public V get(K key) {
 		try {
-			Element<V> e = map.remove(key);
+			Element<V> e = map.get(key);
 			if (e == null) {
 				return null;
 			}
@@ -144,8 +144,7 @@ public final class MemoryCache<K, V> {
 			}
 			
 			e.accessTimestamp = now;
-			map.put(key, e);
-	
+
 			return e.v;
 		} finally {
 			check();
@@ -191,12 +190,11 @@ public final class MemoryCache<K, V> {
 		return map.keySet();
 	}
 
-	public List<V> values() {
+	public Stream<V> values() {
 		check();
 		
 		return map.values().stream()
-				.map(e -> e.v)
-				.collect(toImmutableList());
+				.map(e -> e.v);
 	}
 	
 	private static final class InnerMapEntry<K, V> implements Map.Entry<K, V> {

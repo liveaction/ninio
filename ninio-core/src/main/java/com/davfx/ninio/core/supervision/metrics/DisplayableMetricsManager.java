@@ -1,7 +1,5 @@
 package com.davfx.ninio.core.supervision.metrics;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Slf4jReporter;
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.dependencies.Dependencies;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
@@ -11,11 +9,11 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MarkerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -39,7 +37,6 @@ public class DisplayableMetricsManager {
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("simple-metrics")
             .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught error in thread {}", t, e))
             .build());
-    private final MetricRegistry metricRegistry;
 
     private final ConcurrentMap<String, Metric> metricsByName = Maps.newConcurrentMap();
 
@@ -48,19 +45,14 @@ public class DisplayableMetricsManager {
     }
 
     private DisplayableMetricsManager() {
-        // initialization for dropwizard metrics
-        this.metricRegistry = new MetricRegistry();
-        Slf4jReporter.forRegistry(metricRegistry)
-                .outputTo(LOGGER)
-                .markWith(MarkerFactory.getMarker("METRICS"))
-                .build()
-                .start(5, TimeUnit.MINUTES);
-
         // schedule all custom displays
         Instant now = Instant.now();
         long displayStart = 1 + SUPERVISION_DISPLAY.toMillis() - (now.toEpochMilli() % SUPERVISION_DISPLAY.toMillis());
 
         AtomicLong previousDisplaySlot = new AtomicLong();
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("simple-metrics")
+                .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught error in thread {}", t, e))
+                .build());
         executor.scheduleAtFixedRate(() -> {
                     try {
                         long currentSlot = Instant.now().toEpochMilli() / SUPERVISION_CLEAR.toMillis();
@@ -138,7 +130,7 @@ public class DisplayableMetricsManager {
                 .orElse("");
     }
 
-    public static MetricRegistry getMetricRegistry() {
-        return INSTANCE.metricRegistry;
+    public Map<String, Metric> getMetrics() {
+        return Collections.unmodifiableMap(metricsByName);
     }
 }
