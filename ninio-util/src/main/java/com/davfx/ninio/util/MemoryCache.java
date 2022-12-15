@@ -1,5 +1,6 @@
 package com.davfx.ninio.util;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.typesafe.config.Config;
 
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.DoubleSupplier;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -16,6 +18,9 @@ public final class MemoryCache<K, V> {
 	
 	private static final Config CONFIG = ConfigUtils.load(new com.davfx.ninio.util.dependencies.Dependencies()).getConfig(MemoryCache.class.getPackage().getName());
 	private static final double DEFAULT_CHECK_TIME = ConfigUtils.getDuration(CONFIG, "cache.default.check");
+
+	@VisibleForTesting
+	DoubleSupplier nowSupplier = DateUtils::now;
 
 	public static interface Builder<K, V> {
 		Builder<K, V> expireAfterAccess(double expiration);
@@ -101,7 +106,7 @@ public final class MemoryCache<K, V> {
 	
 	public void put(K key, V value) {
 		try {
-			double now = DateUtils.now();
+			double now = nowSupplier.getAsDouble();
 	
 			Element<V> e = new Element<>(value);
 			e.writeTimestamp = now;
@@ -128,7 +133,7 @@ public final class MemoryCache<K, V> {
 				return null;
 			}
 	
-			double now = DateUtils.now();
+			double now = nowSupplier.getAsDouble();
 			
 			if (expirationAfterAccess > 0d) {
 				if ((now - e.accessTimestamp) >= expirationAfterAccess) {
@@ -168,7 +173,7 @@ public final class MemoryCache<K, V> {
 	}
 	
 	private void check() {
-		double now = DateUtils.now();
+		double now = nowSupplier.getAsDouble();
 
 		if ((now - lastCheck) < checkTime) {
 			return;
