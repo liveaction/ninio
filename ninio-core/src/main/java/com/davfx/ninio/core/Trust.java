@@ -74,6 +74,7 @@ public final class Trust {
 	}
 	
 	public Trust(String keysResourceName, String keysPassPhrase, String trustResourceName, String trustPassPhrase) {
+		LOGGER.info("Initialize secured trust store");
 		try {
 			ksKeys = KeyStore.getInstance("JKS");
 			try (InputStream in = Files.newInputStream(Paths.get(keysResourceName))) {
