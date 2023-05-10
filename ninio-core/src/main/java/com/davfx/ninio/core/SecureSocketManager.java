@@ -1,16 +1,15 @@
 package com.davfx.ninio.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.concurrent.Executor;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 final class SecureSocketManager implements Connected, Connection {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SecureSocketManager.class);
@@ -56,7 +55,7 @@ final class SecureSocketManager implements Connected, Connection {
 	}
 	
 	private void fail(IOException ioe) {
-		LOGGER.error("SSL error", ioe);
+	LOGGER.error("SSL error", ioe);
 		doClose();
 		
 		if (!closed) {

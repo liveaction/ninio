@@ -1,13 +1,10 @@
 package com.davfx.ninio.core;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
-import java.util.Enumeration;
+import com.davfx.ninio.core.dependencies.Dependencies;
+import com.davfx.ninio.util.ConfigUtils;
+import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -15,13 +12,16 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.davfx.ninio.core.dependencies.Dependencies;
-import com.davfx.ninio.util.ConfigUtils;
-import com.typesafe.config.Config;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
+import java.util.Enumeration;
 
 public final class Trust {
 	
@@ -54,14 +54,16 @@ public final class Trust {
 				ksTrust.load(in, trustPassPhrase.toCharArray());
 			}
 
-			KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+			KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 			kmf.init(ksKeys, keysPassPhrase.toCharArray());
 
-			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+			TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			tmf.init(ksTrust);
 
 			sslContext = SSLContext.getInstance(TLS_VERSION);
 			sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+			SSLEngine sslEngine = sslContext.createSSLEngine();
+			sslEngine.setNeedClientAuth(true);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -72,9 +74,10 @@ public final class Trust {
 	}
 	
 	public Trust(String keysResourceName, String keysPassPhrase, String trustResourceName, String trustPassPhrase) {
+		LOGGER.info("Initialize secured trust store");
 		try {
 			ksKeys = KeyStore.getInstance("JKS");
-			try (InputStream in = Trust.class.getResourceAsStream(keysResourceName)) {
+			try (InputStream in = Files.newInputStream(Paths.get(keysResourceName))) {
 				ksKeys.load(in, keysPassPhrase.toCharArray());
 			}
 			Enumeration<String> e = ksKeys.aliases();
@@ -83,14 +86,14 @@ public final class Trust {
 				LOGGER.trace("Alias in key store: {}", alias);
 			}
 			KeyStore ksTrust = KeyStore.getInstance("JKS");
-			try (InputStream in = Trust.class.getResourceAsStream(trustResourceName)) {
+			try (InputStream in = Files.newInputStream(Paths.get(trustResourceName))) {
 				ksTrust.load(in, trustPassPhrase.toCharArray());
 			}
 
-			KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+			KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 			kmf.init(ksKeys, keysPassPhrase.toCharArray());
 
-			TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+			TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			tmf.init(ksTrust);
 
 			sslContext = SSLContext.getInstance(TLS_VERSION);
@@ -118,7 +121,7 @@ public final class Trust {
 			TrustManager[] t = INSECURE ? new TrustManager[] {
 				new X509TrustManager() {
 					@Override
-					public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+					public X509Certificate[] getAcceptedIssuers() {
 						return null;
 					}
 					@Override

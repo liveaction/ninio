@@ -30,7 +30,7 @@ public class EchoTest {
 
 			final Wait serverWaitServerClosing = new Wait();
 			final Wait serverWaitServerConnecting = new Wait();
-			try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultServer(new Address(Address.ANY, proxyPort), new ProxyListening() {
+			try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultUnsecureServer(new Address(Address.ANY, proxyPort), new ProxyListening() {
 				@Override
 				public void closed() {
 					serverWaitServerClosing.run();
@@ -56,7 +56,7 @@ public class EchoTest {
 				
 				serverWaitServerConnecting.waitFor();
 				
-				try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultClient(new Address(Address.LOCALHOST, proxyPort)))) {
+				try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
 					final Wait clientWaitClientConnecting = new Wait();
 					final Wait clientWaitClientClosing = new Wait();
 
@@ -110,7 +110,7 @@ public class EchoTest {
 
 			final Wait serverWaitServerClosing = new Wait();
 			final Wait serverWaitServerConnecting = new Wait();
-			try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultServer(new Address(Address.ANY, proxyPort), new ProxyListening() {
+			try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultUnsecureServer(new Address(Address.ANY, proxyPort), new ProxyListening() {
 				@Override
 				public void closed() {
 					serverWaitServerClosing.run();
@@ -136,7 +136,7 @@ public class EchoTest {
 				
 				serverWaitServerConnecting.waitFor();
 				
-				try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultClient(new Address(Address.LOCALHOST, proxyPort)))) {
+				try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
 					for (int i = 0; i < 5; i++) {
 						final Wait clientWaitClientConnecting = new Wait();
 						final Wait clientWaitClientClosing = new Wait();

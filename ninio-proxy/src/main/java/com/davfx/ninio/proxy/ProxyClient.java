@@ -7,10 +7,12 @@ import com.davfx.ninio.core.Connection;
 import com.davfx.ninio.core.NinioBuilder;
 import com.davfx.ninio.core.NinioProvider;
 import com.davfx.ninio.core.RawSocket;
+import com.davfx.ninio.core.SecureSocketBuilder;
 import com.davfx.ninio.core.SendCallback;
 import com.davfx.ninio.core.TcpSocket;
 import com.davfx.ninio.core.TcpdumpMode;
 import com.davfx.ninio.core.TcpdumpSocket;
+import com.davfx.ninio.core.Trust;
 import com.davfx.ninio.core.UdpSocket;
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
@@ -22,6 +24,8 @@ import com.davfx.ninio.http.WebsocketSocket;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ProtocolFamily;
@@ -29,13 +33,36 @@ import java.net.StandardProtocolFamily;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 
 public final class ProxyClient implements ProxyProvider {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProxyClient.class);
 
-    public static NinioBuilder<ProxyProvider> defaultClient(final Address address) {
+    public static NinioBuilder<ProxyProvider> defaultSecureClient(final Address address,
+                                                                  Optional<String> keyStorePath,
+                                                                  Optional<String> keyStorePwd) {
+        if (!keyStorePath.isPresent())
+            throw new IllegalArgumentException("Key store path is mandatory when useing secure option");
+        if (!keyStorePwd.isPresent())
+            throw new IllegalArgumentException("Key store password is mandatory when useing secure option");
+        return defaultClient(address, true, keyStorePath.get(), keyStorePwd.get());
+
+    }
+
+    public static NinioBuilder<ProxyProvider> defaultUnsecureClient(final Address address) {
+        return defaultClient(address, false, null, null);
+    }
+
+    public static NinioBuilder<ProxyProvider> defaultClient(final Address address,
+                                                            boolean secure,
+                                                            String keyStorePath,
+                                                            String keyStorePwd) {
         return ninioProvider -> {
-            final ProxyClient client = ProxyClient.builder().with(TcpSocket.builder().to(address)).create(ninioProvider);
+            final ProxyClient client = secure ? ProxyClient.builder()
+                    .with(new SecureSocketBuilder(TcpSocket.builder()).trust(new Trust(keyStorePath, keyStorePwd, keyStorePath, keyStorePwd)).to(address))
+                    .create(ninioProvider) :
+                    ProxyClient.builder().with(TcpSocket.builder().to(address)).create(ninioProvider);
             return new ProxyProvider() {
                 @Override
                 public void close() {
@@ -643,6 +670,7 @@ public final class ProxyClient implements ProxyProvider {
                 SendCallback sendCallback = new SendCallback() {
                     @Override
                     public void failed(IOException e) {
+                        LOGGER.error("error: " + e);
                         doClose();
                     }
 

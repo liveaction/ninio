@@ -70,8 +70,9 @@ public class SocketTest {
 
 				int proxyPort = findAvailablePort();
 
-				try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultServer(new Address(Address.ANY, proxyPort), new WaitProxyListening(serverWaitForProxyServerClosing)))) {
-					try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultClient(new Address(Address.LOCALHOST, proxyPort)))) {
+				try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultUnsecureServer(new Address(Address.ANY, proxyPort),
+						new WaitProxyListening(serverWaitForProxyServerClosing)))) {
+					try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
 						Wait clientWaitClosing = new Wait();
 						try (Connecter client = ninio.create(proxyClient.tcp().to(new Address(Address.LOCALHOST, port)))) {
 							Wait clientWaitConnecting = new Wait();
