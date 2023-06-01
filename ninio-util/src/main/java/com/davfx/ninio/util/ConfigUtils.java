@@ -1,22 +1,17 @@
 package com.davfx.ninio.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Charsets;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.time.Duration;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public final class ConfigUtils {
 	
@@ -28,7 +23,11 @@ public final class ConfigUtils {
 	public static double getDuration(Config c, String key) {
 		return c.getDuration(key, TimeUnit.NANOSECONDS) / 1_000_000_000d;
 	}
-	
+
+	public static Duration getJavaDuration(Config c, String key) {
+		return c.getDuration(key);
+	}
+
 	public static char getChar(Config c, String key) {
 		String s = c.getString(key);
 		if (s.length() != 1) {
