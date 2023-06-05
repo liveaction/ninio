@@ -59,12 +59,8 @@
     <modules>
         <module>ninio-core</module>
         <module>ninio-snmp</module>
-        <module>ninio-telnet</module>
-        <module>ninio-ssh</module>
         <module>ninio-ping</module>
-        <module>ninio-dns</module>
         <module>ninio-proxy</module>
-        <module>ninio-http</module>
         <module>ninio-util</module>
         <module>ninio-string</module>
         <module>ninio-csv</module>
@@ -84,32 +80,12 @@
             </dependency>
             <dependency>
                 <groupId>com.davfx.ninio</groupId>
-                <artifactId>ninio-telnet</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.davfx.ninio</groupId>
-                <artifactId>ninio-ssh</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.davfx.ninio</groupId>
                 <artifactId>ninio-ping</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.davfx.ninio</groupId>
-                <artifactId>ninio-dns</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.davfx.ninio</groupId>
                 <artifactId>ninio-proxy</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.davfx.ninio</groupId>
-                <artifactId>ninio-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

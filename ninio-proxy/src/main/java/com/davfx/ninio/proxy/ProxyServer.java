@@ -1,30 +1,6 @@
 package com.davfx.ninio.proxy;
 
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.Connected;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.Disconnectable;
-import com.davfx.ninio.core.Listener;
-import com.davfx.ninio.core.Listening;
-import com.davfx.ninio.core.NinioBuilder;
-import com.davfx.ninio.core.NinioProvider;
-import com.davfx.ninio.core.RawSocket;
-import com.davfx.ninio.core.SecureSocketBuilder;
-import com.davfx.ninio.core.SecureSocketServerBuilder;
-import com.davfx.ninio.core.SendCallback;
-import com.davfx.ninio.core.TcpSocket;
-import com.davfx.ninio.core.TcpSocketServer;
-import com.davfx.ninio.core.TcpdumpMode;
-import com.davfx.ninio.core.TcpdumpSocket;
-import com.davfx.ninio.core.Trust;
-import com.davfx.ninio.core.UdpSocket;
-import com.davfx.ninio.dns.DnsClient;
-import com.davfx.ninio.dns.DnsConnecter;
-import com.davfx.ninio.http.HttpClient;
-import com.davfx.ninio.http.HttpConnecter;
-import com.davfx.ninio.http.HttpSocket;
-import com.davfx.ninio.http.WebsocketSocket;
+import com.davfx.ninio.core.*;
 import com.google.common.base.Charsets;
 import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
@@ -68,8 +44,6 @@ public final class ProxyServer implements Listening {
 
             @Override
             public Disconnectable create(NinioProvider ninioProvider) {
-                final DnsConnecter dnsClient = DnsClient.builder().create(ninioProvider);
-                final HttpConnecter httpClient = HttpClient.builder().with(dnsClient).create(ninioProvider);
 
                 final ProxyServer.Builder proxyServerBuilder = ProxyServer.builder().listening(new ProxyListening() {
                     @Override
@@ -97,32 +71,10 @@ public final class ProxyServer implements Listening {
                     public NinioBuilder<Connecter> create(Address address, String header) {
                         ProxyHeader h = ProxyHeader.of(header);
 
-                        if (h.type.equals(ProxyCommons.Types.TCP) && !secure) {
-                            return TcpSocket.builder().to(address);
-                        }
-                        if (h.type.equals(ProxyCommons.Types.TCP) && secure) {
-                            return new SecureSocketBuilder(TcpSocket.builder()).trust(trust).to(address);
-                        }
-                        if (h.type.equals(ProxyCommons.Types.UDP)) {
-                            return UdpSocket.builder();
-                        }
-                        if (h.type.equals(ProxyCommons.Types.TCPDUMP)) {
-                            return TcpdumpSocket.builder()
-                                    .on(h.parameters.get("interfaceId")).mode(TcpdumpMode.valueOf(h.parameters.get("mode"))).rule(h.parameters.get("rule"));
-                        }
-                        if (h.type.equals(ProxyCommons.Types.SSL)) {
-                            return new SecureSocketBuilder(TcpSocket.builder()).trust(trust).to(address);
-                        }
                         if (h.type.equals(ProxyCommons.Types.RAW)) {
                             ProtocolFamily family = "6".equals(h.parameters.get("family")) ? StandardProtocolFamily.INET6 : StandardProtocolFamily.INET;
                             int protocol = Integer.parseInt(h.parameters.get("protocol"));
                             return RawSocket.builder().family(family).protocol(protocol);
-                        }
-                        if (h.type.equals(ProxyCommons.Types.WEBSOCKET)) {
-                            return WebsocketSocket.builder().to(address).with(httpClient).route(h.parameters.get("route"));
-                        }
-                        if (h.type.equals(ProxyCommons.Types.HTTP)) {
-                            return HttpSocket.builder(secure).to(address).with(httpClient).route(h.parameters.get("route"));
                         }
 
                         if (listening == null) {
@@ -138,10 +90,7 @@ public final class ProxyServer implements Listening {
                         TcpSocketServer.builder().bind(address).create(ninioProvider);
 
                 server.listen(proxyServerBuilder.create(ninioProvider));
-                return () -> {
-                    server.close();
-                    httpClient.close();
-                };
+                return server;
             }
         };
     }
