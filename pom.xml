@@ -67,7 +67,6 @@
         <module>ninio-http</module>
         <module>ninio-util</module>
         <module>ninio-script</module>
-        <module>ninio-sort</module>
         <module>ninio-string</module>
         <module>ninio-csv</module>
     </modules>
@@ -122,11 +121,6 @@
             <dependency>
                 <groupId>com.davfx.ninio</groupId>
                 <artifactId>ninio-script</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.davfx.ninio</groupId>
-                <artifactId>ninio-sort</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
