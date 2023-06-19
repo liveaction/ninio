@@ -42,7 +42,7 @@ final class EncryptionEngine {
 			messageDigest = null;
 		} else {
 			try {
-				messageDigest = MessageDigest.getInstance(authProtocol.protocolName());
+				messageDigest = MessageDigest.getInstance(authProtocol.algorithm());
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e);
 			}
@@ -53,10 +53,10 @@ final class EncryptionEngine {
 			cipher = null;
 			privKeyLength = 0;
 		} else {
-			this.privEncryptionAlgorithm = privacyProtocol.protocolClass();
+			this.privEncryptionAlgorithm = privacyProtocol.category();
 			LOGGER.trace("Creating encryption engine");
 			try {
-				cipher = Cipher.getInstance(privacyProtocol.protocolId());
+				cipher = Cipher.getInstance(privacyProtocol.id());
 			} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
 				throw new RuntimeException(e);
 			}
@@ -138,7 +138,7 @@ final class EncryptionEngine {
 		System.arraycopy(shortKey, 0, extKey, 0, length);
 
 		while (length < extKey.length) {
-			byte[] hash = hash(extKey, 0, length);
+			byte[] hash = hash(extKey, length);
 
 			if (hash == null) {
 				return null;
@@ -153,9 +153,9 @@ final class EncryptionEngine {
 		return extKey;
 	}
 
-	public byte[] hash(byte[] data, int offset, int length) {
+	private byte[] hash(byte[] data, int length) {
 		messageDigest.reset();
-		messageDigest.update(data, offset, length);
+		messageDigest.update(data, 0, length);
 		return messageDigest.digest();
 	}
 

@@ -1,18 +1,11 @@
 package com.davfx.ninio.snmp;
 
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.NinioBuilder;
-import com.davfx.ninio.core.NinioProvider;
-import com.davfx.ninio.core.SendCallback;
-import com.davfx.ninio.core.UdpSocket;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
 import com.davfx.ninio.snmp.encryption.AuthProtocol;
 import com.davfx.ninio.snmp.encryption.PrivacyProtocol;
-import com.davfx.ninio.snmp.encryption.SecurityProtocols;
 import com.davfx.ninio.util.ConfigUtils;
 import com.google.common.collect.ImmutableList;
 import com.typesafe.config.Config;
@@ -169,10 +162,10 @@ public final class SnmpClient implements SnmpConnecter {
 							EncryptionEngine encryptionEngine = authCache.encryptionEngines.getIfPresent(encryptionEngineKey);
 							if (encryptionEngine == null) {
 								AuthProtocol authProtocol = Optional.ofNullable(auth.authDigestAlgorithm)
-										.map(SecurityProtocols::getAuthenticationProtocol)
+										.map(AuthProtocol::fromAlgorithm)
 										.orElse(null);
 								PrivacyProtocol privacyProtocol = Optional.ofNullable(auth.privEncryptionAlgorithm)
-										.map(SecurityProtocols::getPrivacyProtocol)
+										.map(PrivacyProtocol::fromAlgorithm)
 										.orElse(null);
 
 								encryptionEngine = new EncryptionEngine(authProtocol, privacyProtocol, AUTH_ENGINES_CACHE_DURATION);
