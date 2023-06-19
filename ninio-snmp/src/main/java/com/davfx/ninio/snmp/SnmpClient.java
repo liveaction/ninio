@@ -1,15 +1,11 @@
 package com.davfx.ninio.snmp;
 
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.NinioBuilder;
-import com.davfx.ninio.core.NinioProvider;
-import com.davfx.ninio.core.SendCallback;
-import com.davfx.ninio.core.UdpSocket;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
+import com.davfx.ninio.snmp.encryption.AuthProtocol;
+import com.davfx.ninio.snmp.encryption.PrivacyProtocol;
 import com.davfx.ninio.util.ConfigUtils;
 import com.google.common.collect.ImmutableList;
 import com.typesafe.config.Config;
@@ -18,11 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 
 import static com.davfx.ninio.snmp.AuthCache.AUTH_ENGINES_CACHE_DURATION;
@@ -169,7 +161,14 @@ public final class SnmpClient implements SnmpConnecter {
 							EncryptionEngineKey encryptionEngineKey = new EncryptionEngineKey(auth.authDigestAlgorithm, auth.privEncryptionAlgorithm);
 							EncryptionEngine encryptionEngine = authCache.encryptionEngines.getIfPresent(encryptionEngineKey);
 							if (encryptionEngine == null) {
-								encryptionEngine = new EncryptionEngine(auth.authDigestAlgorithm, auth.privEncryptionAlgorithm, AUTH_ENGINES_CACHE_DURATION);
+								AuthProtocol authProtocol = Optional.ofNullable(auth.authDigestAlgorithm)
+										.map(AuthProtocol::fromAlgorithm)
+										.orElse(null);
+								PrivacyProtocol privacyProtocol = Optional.ofNullable(auth.privEncryptionAlgorithm)
+										.map(PrivacyProtocol::fromAlgorithm)
+										.orElse(null);
+
+								encryptionEngine = new EncryptionEngine(authProtocol, privacyProtocol, AUTH_ENGINES_CACHE_DURATION);
 								authCache.encryptionEngines.put(encryptionEngineKey, encryptionEngine);
 							}
 
@@ -439,7 +438,7 @@ public final class SnmpClient implements SnmpConnecter {
 			};
 
 			if (authRemoteEnginePendingRequestManager == null) {
-                AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing %s v2: %s:%s", snmpCallType, v, requestOid));
+				AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing %s v2: %s:%s", snmpCallType, v, requestOid));
 				switch (snmpCallType) {
 					case GET: {
 						Version2cPacketBuilder builder = Version2cPacketBuilder.get(community, instanceId, requestOid);

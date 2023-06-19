@@ -1,11 +1,10 @@
 package com.davfx.ninio.snmp;
 
-import java.nio.ByteBuffer;
-
+import com.google.common.io.BaseEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.BaseEncoding;
+import java.nio.ByteBuffer;
 
 final class AuthRemoteEngine {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AuthRemoteEngine.class);
@@ -47,8 +46,8 @@ final class AuthRemoteEngine {
 		timeResetAt = 0L;
 		time = 0;
 		
-		authKey = encryptionEngine.regenerateKey(null, auth.authPassword);
-		privKey = encryptionEngine.regenerateKey(null, auth.privPassword);
+		authKey = encryptionEngine.regenerateKey(null, auth.authPassword, false);
+		privKey = encryptionEngine.regenerateKey(null, auth.privPassword, true);
 	}
 	
 	public int incPacketNumber() {
@@ -74,8 +73,8 @@ final class AuthRemoteEngine {
 			LOGGER.trace("Auth engine ID: {} -> {}", (this.id == null) ? null : BaseEncoding.base16().encode(this.id), BaseEncoding.base16().encode(id));
 		}
 		this.id = id;
-		authKey = encryptionEngine.regenerateKey(this.id, auth.authPassword);
-		privKey = encryptionEngine.regenerateKey(this.id, auth.privPassword);
+		authKey = encryptionEngine.regenerateKey(this.id, auth.authPassword, false);
+		privKey = encryptionEngine.regenerateKey(this.id, auth.privPassword, true);
 	}
 	public void setEncryptionParameters(byte[] encryptionParameters) {
 		this.encryptionParameters = encryptionParameters;
