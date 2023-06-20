@@ -28,7 +28,8 @@ final class EncryptionEngine {
 	private static final int ENCRYPTION_MARGIN = 64;
 	private final SecureRandom random = new SecureRandom();
 	private final MessageDigest messageDigest;
-	private final Cipher cipher;
+	private final Cipher encryptionCipher;
+	private final Cipher decryptionCipher;
 	private final int privKeyLength;
 	private final MemoryCache<String, byte[]> cache;
 	private final String privEncryptionAlgorithm;
@@ -50,13 +51,15 @@ final class EncryptionEngine {
 
 		if (privacyProtocol == null) {
 			this.privEncryptionAlgorithm = null;
-			cipher = null;
+			encryptionCipher = null;
+			decryptionCipher = null;
 			privKeyLength = 0;
 		} else {
 			this.privEncryptionAlgorithm = privacyProtocol.category();
 			LOGGER.trace("Creating encryption engine");
 			try {
-				cipher = Cipher.getInstance(privacyProtocol.id());
+				encryptionCipher = Cipher.getInstance(privacyProtocol.encryption());
+				decryptionCipher = Cipher.getInstance(privacyProtocol.decryption());
 			} catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
 				throw new RuntimeException(e);
 			}
@@ -207,7 +210,7 @@ final class EncryptionEngine {
 	}
 
 	public ByteBuffer encrypt(int bootCount, int time, byte[] encryptionParameters, byte[] privKey, ByteBuffer decryptedBuffer) {
-		if (cipher == null) {
+		if (encryptionCipher == null) {
 			return null;
 		}
 
@@ -236,9 +239,9 @@ final class EncryptionEngine {
 			}
 		}
 		try {
-			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(privKey, 0, privKeyLength, privEncryptionAlgorithm), new IvParameterSpec(iv));
+			encryptionCipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(privKey, 0, privKeyLength, privEncryptionAlgorithm), new IvParameterSpec(iv));
 			ByteBuffer b = ByteBuffer.allocate(decryptedBuffer.remaining() + ENCRYPTION_MARGIN);
-			cipher.doFinal(decryptedBuffer, b);
+			encryptionCipher.doFinal(decryptedBuffer, b);
 			b.flip();
 			return b;
 		} catch (GeneralSecurityException e) {
@@ -247,7 +250,7 @@ final class EncryptionEngine {
 	}
 
 	public ByteBuffer decrypt(int bootCount, int time, byte[] encryptionParameters, byte[] privKey, ByteBuffer encryptedBuffer) {
-		if (cipher == null) {
+		if (decryptionCipher == null) {
 			return null;
 		}
 
@@ -272,9 +275,9 @@ final class EncryptionEngine {
 		try {
 			SecretKeySpec key = new SecretKeySpec(privKey, 0, privKeyLength, privEncryptionAlgorithm);
 			IvParameterSpec ivSpec = new IvParameterSpec(iv);
-			cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
+			decryptionCipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
 			ByteBuffer b = ByteBuffer.allocate(encryptedBuffer.remaining() + ENCRYPTION_MARGIN);
-			cipher.doFinal(encryptedBuffer, b);
+			decryptionCipher.doFinal(encryptedBuffer, b);
 			b.flip();
 			return b;
 		} catch (GeneralSecurityException e) {
