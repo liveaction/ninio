@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.davfx.ninio</groupId>
 		<artifactId>ninio</artifactId>
-		<version>4.6.2</version>
+		<version>4.6.3</version>
 	</parent>
 
 	<artifactId>ninio-snmp</artifactId>
@@ -20,12 +20,6 @@
 		<dependency>
 			<groupId>com.davfx.ninio</groupId>
 			<artifactId>ninio-proxy</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.snmp4j</groupId>
-			<artifactId>snmp4j</artifactId>
-			<version>3.7.7</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
