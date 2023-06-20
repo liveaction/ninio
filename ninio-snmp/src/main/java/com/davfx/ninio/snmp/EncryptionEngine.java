@@ -8,7 +8,6 @@ import com.google.common.io.BaseEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
@@ -36,7 +35,7 @@ final class EncryptionEngine {
 	private final AuthProtocol authDigestAlgorithm;
 	private final PrivacyProtocol privacyProtocol;
 
-	public EncryptionEngine(@Nullable AuthProtocol authProtocol, @Nullable PrivacyProtocol privacyProtocol, double cacheDuration) {
+	public EncryptionEngine(AuthProtocol authProtocol, PrivacyProtocol privacyProtocol, double cacheDuration) {
 		this.authDigestAlgorithm = authProtocol;
 		this.privacyProtocol = privacyProtocol;
 		if (authProtocol == null) {
