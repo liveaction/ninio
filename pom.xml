@@ -45,7 +45,7 @@
     </distributionManagement>
 
     <properties>
-        <jdk.version>1.8</jdk.version>
+        <jdk.version>17</jdk.version>
         <metrics-core.version>4.2.12</metrics-core.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.36</slf4j.version>
@@ -195,7 +195,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>5.1.8</version>
                 <extensions>true</extensions>
             </plugin>
             <plugin>
