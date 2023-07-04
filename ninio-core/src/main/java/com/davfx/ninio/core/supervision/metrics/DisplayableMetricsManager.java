@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * It allows both dropwizard metrics (with Slf4jReporter), and custom metrics which are reset every 5mn (with custom reporting)
  */
 public class DisplayableMetricsManager {
+    public static final String METRICS_TAG = "[app-metrics]";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DisplayableMetricsManager.class);
 
     private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(Address.class.getPackage().getName());
@@ -111,7 +113,7 @@ public class DisplayableMetricsManager {
 
     private void display(boolean clear) {
         if (LOGGER.isDebugEnabled() || (clear && LOGGER.isInfoEnabled())) {
-            String prefix = clear ? "[clear] " : "";
+            String prefix = clear ? METRICS_TAG + " [clear] " : METRICS_TAG + " ";
             for (Map.Entry<String, Metric> entry : metricsByName.entrySet()) {
                 if (entry.getValue().getValue() != null) {
                     String message = String.format("%s%s = %s", prefix, entry.getKey(), entry.getValue().getValue());
