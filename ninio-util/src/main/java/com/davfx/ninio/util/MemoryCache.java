@@ -5,6 +5,7 @@ import com.typesafe.config.Config;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +28,7 @@ public final class MemoryCache<K, V> {
 		Builder<K, V> expireAfterWrite(double expiration);
 		Builder<K, V> check(double checkTime);
 		Builder<K, V> limitedTo(int limit);
+		Builder<K, V> keepOrder(boolean keepOrder);
 		MemoryCache<K, V> build();
 	}
 	
@@ -36,6 +38,7 @@ public final class MemoryCache<K, V> {
 			private double expirationAfterWrite = 0d;
 			private double checkTime = DEFAULT_CHECK_TIME;
 			private int limit = 0;
+			private boolean keepOrder = false;
 
 			@Override
 			public Builder<K, V> expireAfterAccess(double expiration) {
@@ -57,10 +60,16 @@ public final class MemoryCache<K, V> {
 				this.checkTime = checkTime;
 				return this;
 			}
-			
+
+			@Override
+			public Builder<K, V> keepOrder(boolean keepOrder) {
+				this.keepOrder = keepOrder;
+				return this;
+			}
+
 			@Override
 			public MemoryCache<K, V> build() {
-				return new MemoryCache<>(expirationAfterAccess, expirationAfterWrite, limit, checkTime);
+				return new MemoryCache<>(expirationAfterAccess, expirationAfterWrite, limit, checkTime, keepOrder);
 			}
 		};
 	}
@@ -79,14 +88,15 @@ public final class MemoryCache<K, V> {
 	private final int limit;
 	private final double checkTime;
 	private double lastCheck = 0d;
-	private final Map<K, Element<V>> map = new HashMap<>();
+	private final Map<K, Element<V>> map;
 	
-	private MemoryCache(double expirationAfterAccess, double expirationAfterWrite, int limit, double checkTime) {
+	private MemoryCache(double expirationAfterAccess, double expirationAfterWrite, int limit, double checkTime, boolean keepOrder) {
 		this.expirationAfterAccess = expirationAfterAccess;
 		this.expirationAfterWrite = expirationAfterWrite;
 		this.limit = limit;
 		this.checkTime = checkTime;
-	}
+		this.map = keepOrder ? new LinkedHashMap<>() : new HashMap<>();
+    }
 	
 	@Override
 	public String toString() {
