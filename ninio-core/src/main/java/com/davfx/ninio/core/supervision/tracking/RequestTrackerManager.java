@@ -35,9 +35,11 @@ public final class RequestTrackerManager implements Closeable {
 
     private Instant lastTrackingFileUpdate = Instant.EPOCH;
 
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("simple-metrics")
-            .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught error in thread {}", t, e))
-            .build());
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat("load-tracking-devices")
+                    .setUncaughtExceptionHandler((t, e) -> LOGGER.error("Uncaught error in thread {}", t, e))
+                    .build()
+    );
 
     public static RequestTrackerManager instance() {
         if (INSTANCE == null) {
