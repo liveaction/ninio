@@ -26,9 +26,9 @@ public final class ProxyClient implements ProxyProvider {
                                                                   Optional<String> keyStorePath,
                                                                   Optional<String> keyStorePwd) {
         if (!keyStorePath.isPresent())
-            throw new IllegalArgumentException("Key store path is mandatory when useing secure option");
+            throw new IllegalArgumentException("Key store path is mandatory when using secure option");
         if (!keyStorePwd.isPresent())
-            throw new IllegalArgumentException("Key store password is mandatory when useing secure option");
+            throw new IllegalArgumentException("Key store password is mandatory when using secure option");
         return defaultClient(address, true, keyStorePath.get(), keyStorePwd.get());
 
     }
