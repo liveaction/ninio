@@ -1,6 +1,7 @@
 package com.davfx.ninio.snmp;
 
 import com.davfx.ninio.core.Address;
+import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
 import com.davfx.ninio.util.ConfigUtils;
 import com.google.common.cache.Cache;
@@ -54,7 +55,7 @@ public final class AuthCache {
                 }
                 totalCount++;
             }
-            LOGGER.info("SNMPv3 Auth Metrics : {}/{} are ready (approximated)", readyCount, totalCount);
+            LOGGER.info("{} SNMPv3 Auth Metrics : {}/{} are ready (approximated)", DisplayableMetricsManager.METRICS_TAG, readyCount, totalCount);
         }, 0, 5, TimeUnit.MINUTES);
 
         scheduler.scheduleAtFixedRate(() -> {

@@ -1,26 +1,9 @@
 package com.davfx.ninio.proxy;
 
-import com.davfx.ninio.core.Address;
-import com.davfx.ninio.core.ByteBufferAllocator;
-import com.davfx.ninio.core.Connecter;
-import com.davfx.ninio.core.Connection;
-import com.davfx.ninio.core.NinioBuilder;
-import com.davfx.ninio.core.NinioProvider;
-import com.davfx.ninio.core.RawSocket;
-import com.davfx.ninio.core.SecureSocketBuilder;
-import com.davfx.ninio.core.SendCallback;
-import com.davfx.ninio.core.TcpSocket;
-import com.davfx.ninio.core.TcpdumpMode;
-import com.davfx.ninio.core.TcpdumpSocket;
-import com.davfx.ninio.core.Trust;
-import com.davfx.ninio.core.UdpSocket;
+import com.davfx.ninio.core.*;
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
-import com.davfx.ninio.http.HttpConnecter;
-import com.davfx.ninio.http.HttpSocket;
-import com.davfx.ninio.http.HttpSpecification;
-import com.davfx.ninio.http.WebsocketSocket;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
@@ -43,9 +26,9 @@ public final class ProxyClient implements ProxyProvider {
                                                                   Optional<String> keyStorePath,
                                                                   Optional<String> keyStorePwd) {
         if (!keyStorePath.isPresent())
-            throw new IllegalArgumentException("Key store path is mandatory when useing secure option");
+            throw new IllegalArgumentException("Key store path is mandatory when using secure option");
         if (!keyStorePwd.isPresent())
-            throw new IllegalArgumentException("Key store password is mandatory when useing secure option");
+            throw new IllegalArgumentException("Key store password is mandatory when using secure option");
         return defaultClient(address, true, keyStorePath.get(), keyStorePwd.get());
 
     }
@@ -75,38 +58,8 @@ public final class ProxyClient implements ProxyProvider {
                 }
 
                 @Override
-                public TcpSocket.Builder tcp() {
-                    return client.tcp();
-                }
-
-                @Override
-                public UdpSocket.Builder udp() {
-                    return client.udp();
-                }
-
-                @Override
-                public TcpdumpSocket.Builder tcpdump() {
-                    return client.tcpdump();
-                }
-
-                @Override
                 public RawSocket.Builder raw() {
                     return client.raw();
-                }
-
-                @Override
-                public TcpSocket.Builder ssl() {
-                    return client.ssl();
-                }
-
-                @Override
-                public WebsocketSocket.Builder websocket() {
-                    return client.websocket();
-                }
-
-                @Override
-                public HttpSocket.Builder http() {
-                    return client.http();
                 }
             };
         };
@@ -170,9 +123,7 @@ public final class ProxyClient implements ProxyProvider {
             if (proxyConnector != null) {
                 proxyConnector.close();
             }
-            // connections.clear();
         });
-        //%% ExecutorUtils.waitFor(proxyExecutor);
     }
 
     @Override
@@ -204,119 +155,6 @@ public final class ProxyClient implements ProxyProvider {
     }
 
     @Override
-    public TcpSocket.Builder tcp() {
-        return new TcpSocket.Builder() {
-            private Address connectAddress = null;
-
-            @Override
-            public TcpSocket.Builder with(ByteBufferAllocator byteBufferAllocator) {
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder bind(Address bindAddress) {
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder to(Address connectAddress) {
-                this.connectAddress = connectAddress;
-                return this;
-            }
-
-            @Override
-            public Connecter create(NinioProvider ninioProvider) {
-                return createConnector(new ProxyHeader(ProxyCommons.Types.TCP), connectAddress);
-            }
-        };
-    }
-
-    @Override
-    public TcpSocket.Builder ssl() {
-        return new TcpSocket.Builder() {
-            private Address connectAddress = null;
-
-            @Override
-            public TcpSocket.Builder with(ByteBufferAllocator byteBufferAllocator) {
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder bind(Address bindAddress) {
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder to(Address connectAddress) {
-                this.connectAddress = connectAddress;
-                return this;
-            }
-
-            @Override
-            public Connecter create(NinioProvider ninioProvider) {
-                return createConnector(new ProxyHeader(ProxyCommons.Types.SSL), connectAddress);
-            }
-        };
-    }
-
-    @Override
-    public UdpSocket.Builder udp() {
-        return new UdpSocket.Builder() {
-            @Override
-            public UdpSocket.Builder with(ByteBufferAllocator byteBufferAllocator) {
-                return this;
-            }
-
-            @Override
-            public UdpSocket.Builder bind(Address bindAddress) {
-                return this;
-            }
-
-            @Override
-            public Connecter create(NinioProvider ninioProvider) {
-                return createConnector(new ProxyHeader(ProxyCommons.Types.UDP), null);
-            }
-        };
-    }
-
-    @Override
-    public TcpdumpSocket.Builder tcpdump() {
-        return new TcpdumpSocket.Builder() {
-            private String interfaceId = null;
-            private TcpdumpMode mode = null;
-            private String rule = null;
-
-            @Override
-            public TcpdumpSocket.Builder bind(Address bindAddress) {
-                return this;
-            }
-
-            @Override
-            public TcpdumpSocket.Builder on(String interfaceId) {
-                this.interfaceId = interfaceId;
-                return this;
-            }
-
-            @Override
-            public TcpdumpSocket.Builder mode(TcpdumpMode mode) {
-                this.mode = mode;
-                return this;
-            }
-
-            @Override
-            public TcpdumpSocket.Builder rule(String rule) {
-                this.rule = rule;
-                return this;
-            }
-
-            @Override
-            public Connecter create(NinioProvider ninioProvider) {
-                return createConnector(new ProxyHeader(ProxyCommons.Types.TCPDUMP, ImmutableMap.of("interfaceId", interfaceId, "mode", mode.name(), "rule", rule)), null);
-            }
-        };
-    }
-
-    @Override
     public RawSocket.Builder raw() {
         return new RawSocket.Builder() {
             private ProtocolFamily family = StandardProtocolFamily.INET;
@@ -342,88 +180,6 @@ public final class ProxyClient implements ProxyProvider {
             @Override
             public Connecter create(NinioProvider ninioProvider) {
                 return createConnector(new ProxyHeader(ProxyCommons.Types.RAW, ImmutableMap.of("family", (family == StandardProtocolFamily.INET6) ? "6" : "4", "protocol", String.valueOf(protocol))), null);
-            }
-        };
-    }
-
-    @Override
-    public WebsocketSocket.Builder websocket() {
-        return new WebsocketSocket.Builder() {
-            private Address connectAddress = null;
-
-            private String route = String.valueOf(HttpSpecification.PATH_SEPARATOR);
-
-            @Override
-            public WebsocketSocket.Builder to(Address connectAddress) {
-                this.connectAddress = connectAddress;
-                return this;
-            }
-
-            @Override
-            public WebsocketSocket.Builder with(HttpConnecter httpClient) {
-                return this;
-            }
-
-            @Override
-            public WebsocketSocket.Builder route(String route) {
-                this.route = route;
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder bind(Address bindAddress) {
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder with(ByteBufferAllocator byteBufferAllocator) {
-                return this;
-            }
-
-            @Override
-            public Connecter create(NinioProvider ninioProvider) {
-                return createConnector(new ProxyHeader(ProxyCommons.Types.WEBSOCKET, ImmutableMap.of("route", route)), connectAddress);
-            }
-        };
-    }
-
-    @Override
-    public HttpSocket.Builder http() {
-        return new HttpSocket.Builder() {
-            private Address connectAddress = null;
-
-            private String route = String.valueOf(HttpSpecification.PATH_SEPARATOR);
-
-            @Override
-            public HttpSocket.Builder to(Address connectAddress) {
-                this.connectAddress = connectAddress;
-                return this;
-            }
-
-            @Override
-            public HttpSocket.Builder with(HttpConnecter httpClient) {
-                return this;
-            }
-
-            @Override
-            public HttpSocket.Builder route(String route) {
-                this.route = route;
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder bind(Address bindAddress) {
-                return this;
-            }
-
-            @Override
-            public TcpSocket.Builder with(ByteBufferAllocator byteBufferAllocator) {
-                return this;
-            }
-
-            @Override
-            public Connecter create(NinioProvider ninioProvider) {
-                return createConnector(new ProxyHeader(ProxyCommons.Types.HTTP, ImmutableMap.of("route", route)), connectAddress);
             }
         };
     }
@@ -558,18 +314,6 @@ public final class ProxyClient implements ProxyProvider {
                             return ByteBuffer.wrap(r).getInt();
                         }
 
-                        /*
-                        private String readString(String old, ByteBuffer receivedBuffer, int len) {
-                            if (old != null) {
-                                return old;
-                            }
-                            byte[] r = readBytes(receivedBuffer, len);
-                            if (r == null) {
-                                return null;
-                            }
-                            return new String(r, 0, r.length, Charsets.UTF_8);
-                        }
-                        */
                         private byte[] readBytes(byte[] old, ByteBuffer receivedBuffer, int len) {
                             if (old != null) {
                                 return old;
