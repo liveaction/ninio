@@ -110,6 +110,9 @@ public class DisplayableMetricsManager {
     public PercentMetric percent(LongMetric trackerA, LongMetric trackerB, String... tags) {
         return addIfAbsent(new PercentMetric(trackerA, trackerB, key(tags)));
     }
+    public PercentMetric percent(long staticValue, LongMetric trackerB, String... tags) {
+        return addIfAbsent(new PercentMetric(new StaticCounter(staticValue), trackerB, key(tags)));
+    }
 
     private void display(boolean clear) {
         if (LOGGER.isDebugEnabled() || (clear && LOGGER.isInfoEnabled())) {
