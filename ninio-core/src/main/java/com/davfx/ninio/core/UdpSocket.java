@@ -2,6 +2,7 @@ package com.davfx.ninio.core;
 
 import com.davfx.ninio.core.dependencies.Dependencies;
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
+import com.davfx.ninio.core.supervision.metrics.MetricsParams;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.util.ConfigUtils;
