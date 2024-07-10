@@ -1,17 +1,18 @@
 package com.davfx.ninio.csv;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-
+import com.davfx.ninio.csv.dependencies.Dependencies;
+import com.davfx.ninio.util.ConfigUtils;
+import com.google.common.base.Charsets;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Files;
 import org.junit.Test;
 
-import com.davfx.ninio.csv.dependencies.Dependencies;
-import com.davfx.ninio.util.ConfigUtils;
-import com.google.common.base.Charsets;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class CsvTest {
 
@@ -248,4 +249,67 @@ public class CsvTest {
 		
 		Assertions.fail("Should fail with invalid character");
 	}
+
+	@Test
+	public void testCharsetIsUtf8AndEnforceUtf8Bom() throws Exception {
+		File dir = new File("test-csv");
+		Files.delete(dir);
+
+		dir.mkdirs();
+		File file = new File(dir, "test.csv");
+
+		try (AutoCloseableCsvWriter csv = Csv.write().withCharset(StandardCharsets.UTF_8).enforceUtf8Bom(true).to(file)) {
+			try (CsvWriter.Line line = csv.line()) {
+				line.append("a0");
+				line.append("a1");
+				line.append("a2");
+			}
+			for (int i = 0; i < 2; i++) {
+				try (CsvWriter.Line line = csv.line()) {
+					line.append("b");
+					line.append("\"");
+					line.append(",");
+				}
+			}
+		}
+
+		Assertions.assertThat(Files.contentOf(file, Charsets.UTF_8).replace('\n', '^')).isEqualTo("\uFEFFa0,a1,a2^b,\"\"\"\",\",\"^b,\"\"\"\",\",\"^");
+		FileInputStream input = new FileInputStream(file);
+		byte[] bom = new byte[3];
+		input.read(bom);
+		Assertions.assertThat(new String(bom)).isEqualTo("\uFEFF");
+		Assertions.assertThat(bom).isEqualTo(new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF});
+
+		Files.delete(dir);
+	}
+
+
+	@Test
+	public void testCharsetIsNotUtf8AndEnforceUtf8Bom() throws Exception {
+		File dir = new File("test-csv");
+		Files.delete(dir);
+
+		dir.mkdirs();
+		File file = new File(dir, "test.csv");
+
+		try (AutoCloseableCsvWriter csv = Csv.write().withCharset(StandardCharsets.US_ASCII).enforceUtf8Bom(false).to(file)) {
+			try (CsvWriter.Line line = csv.line()) {
+				line.append("a0");
+				line.append("a1");
+				line.append("a2");
+			}
+			for (int i = 0; i < 2; i++) {
+				try (CsvWriter.Line line = csv.line()) {
+					line.append("b");
+					line.append("\"");
+					line.append(",");
+				}
+			}
+		}
+
+		Assertions.assertThat(Files.contentOf(file, Charsets.US_ASCII).replace('\n', '^')).isEqualTo("a0,a1,a2^b,\"\"\"\",\",\"^b,\"\"\"\",\",\"^");
+
+		Files.delete(dir);
+	}
+
 }
