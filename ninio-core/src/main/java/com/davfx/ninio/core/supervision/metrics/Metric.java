@@ -4,8 +4,18 @@ public abstract class Metric {
 
     private final String name;
 
+    /**
+     * Disposable metrics will be discarded after a reset cycle, meaning that if they're not recreated, they won't be displayed anymore.
+     */
+    private final boolean disposable;
+
     public Metric(String name) {
+        this(name, false);
+    }
+
+    public Metric(String name, boolean disposable) {
         this.name = name;
+        this.disposable = disposable;
     }
 
     /**
@@ -13,6 +23,13 @@ public abstract class Metric {
      */
     public final String name(){
         return name;
+    }
+
+    /**
+     * @return true if the metric is disposable, false otherwise
+     */
+    public boolean isDisposable() {
+        return disposable;
     }
 
     /**
