@@ -17,6 +17,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static com.davfx.ninio.proxy.TestUtil.DEFAULT_RECIPIENT_ID;
 import static com.davfx.ninio.proxy.TestUtil.findAvailablePort;
 
 public class EchoTest {
@@ -45,7 +46,7 @@ public class EchoTest {
 				}
 				@Override
 				public NinioBuilder<Connecter> create(Address address, String header) {
-					if (header.equals("_")) {
+					if (header.startsWith("_")) {
 						return new EchoNinioSocketBuilder();
 					} else {
 						return null;
@@ -60,7 +61,7 @@ public class EchoTest {
 					final Wait clientWaitClientConnecting = new Wait();
 					final Wait clientWaitClientClosing = new Wait();
 
-					try (Connecter client = ninio.create(proxyClient.factory().header(new ProxyHeader("_")).with(new Address(Address.LOCALHOST, port)))) {
+					try (Connecter client = ninio.create(proxyClient.factory(DEFAULT_RECIPIENT_ID).header(new ProxyHeader("_")).with(new Address(Address.LOCALHOST, port)))) {
 						client.connect(new Connection() {
 							
 							@Override
@@ -100,11 +101,10 @@ public class EchoTest {
 	public void testSameToCheckClose() throws Exception {
 		test();
 	}
-	
+
 	@Test
 	public void testTwice() throws Exception {
 		final Lock<ByteBuffer, IOException> lock = new Lock<>();
-		
 		try (Ninio ninio = Ninio.create()) {
 			int proxyPort = findAvailablePort();
 
@@ -125,7 +125,7 @@ public class EchoTest {
 				}
 				@Override
 				public NinioBuilder<Connecter> create(Address address, String header) {
-					if (header.equals("_")) {
+					if (header.startsWith("_")) {
 						return new EchoNinioSocketBuilder();
 					} else {
 						return null;
@@ -141,7 +141,7 @@ public class EchoTest {
 						final Wait clientWaitClientConnecting = new Wait();
 						final Wait clientWaitClientClosing = new Wait();
 
-						try (Connecter client = ninio.create(proxyClient.factory().header(new ProxyHeader("_")).with(new Address(Address.LOCALHOST, port)))) {
+						try (Connecter client = ninio.create(proxyClient.factory(DEFAULT_RECIPIENT_ID).header(new ProxyHeader("_")).with(new Address(Address.LOCALHOST, port)))) {
 							client.connect(new Connection() {
 								
 								@Override

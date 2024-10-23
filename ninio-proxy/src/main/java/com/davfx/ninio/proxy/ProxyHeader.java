@@ -1,15 +1,16 @@
 package com.davfx.ninio.proxy;
 
-import java.util.List;
-import java.util.Map;
-
 import com.davfx.ninio.util.StringUtils;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.List;
+import java.util.Map;
+
 public final class ProxyHeader {
 	public final String type;
 	public final ImmutableMap<String, String> parameters;
+
 	public ProxyHeader(String type, ImmutableMap<String, String> parameters) {
 		this.type = type;
 		this.parameters = parameters;
@@ -18,7 +19,15 @@ public final class ProxyHeader {
 		this.type = type;
 		parameters = ImmutableMap.of();
 	}
-	
+
+	public ProxyHeader withParameter(String name, String value) {
+		ImmutableMap<String, String> newParameters = ImmutableMap.<String, String>builder()
+				.putAll(parameters)
+				.put(name, value)
+				.build();
+		return new ProxyHeader(type, newParameters);
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder(StringUtils.escape(type, ' '));
