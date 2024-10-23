@@ -11,7 +11,6 @@ import com.davfx.ninio.core.SendCallback;
 import com.davfx.ninio.core.TcpSocket;
 import com.davfx.ninio.core.Trust;
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
-import com.davfx.ninio.core.supervision.metrics.MetricsParams;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.google.common.base.Charsets;
@@ -63,13 +62,13 @@ public final class ProxyClient implements ProxyProvider {
                 }
 
                 @Override
-                public WithHeaderSocketBuilder factory() {
-                    return client.factory();
+                public WithHeaderSocketBuilder factory(String recipientId) {
+                    return client.factory(recipientId);
                 }
 
                 @Override
-                public RawSocket.Builder raw() {
-                    return client.raw();
+                public RawSocket.Builder raw(String recipientId) {
+                    return client.raw(recipientId);
                 }
             };
         };
@@ -137,14 +136,14 @@ public final class ProxyClient implements ProxyProvider {
     }
 
     @Override
-    public WithHeaderSocketBuilder factory() {
+    public WithHeaderSocketBuilder factory(String recipientId) {
         return new WithHeaderSocketBuilder() {
             private ProxyHeader header;
             private Address address;
 
             @Override
             public WithHeaderSocketBuilder header(ProxyHeader header) {
-                this.header = header;
+                this.header = header.withParameter("recipientId", recipientId);
                 return this;
             }
 
@@ -165,7 +164,7 @@ public final class ProxyClient implements ProxyProvider {
     }
 
     @Override
-    public RawSocket.Builder raw() {
+    public RawSocket.Builder raw(String recipientId) {
         return new RawSocket.Builder() {
             private ProtocolFamily family = StandardProtocolFamily.INET;
             private int protocol = 0;
@@ -189,7 +188,11 @@ public final class ProxyClient implements ProxyProvider {
 
             @Override
             public Connecter create(NinioProvider ninioProvider) {
-                return createConnector(new ProxyHeader(ProxyCommons.Types.RAW, ImmutableMap.of("family", (family == StandardProtocolFamily.INET6) ? "6" : "4", "protocol", String.valueOf(protocol))), null);
+                ProxyHeader header = new ProxyHeader(ProxyCommons.Types.RAW, ImmutableMap.of(
+                        "family", (family == StandardProtocolFamily.INET6) ? "6" : "4",
+                        "protocol", String.valueOf(protocol),
+                        "recipientId", recipientId));
+                return createConnector(header, null);
             }
         };
     }
