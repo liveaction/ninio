@@ -26,7 +26,7 @@ public class ProxyOpenCloseOpenPingTest {
 			try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultUnsecureServer(new Address(Address.ANY, proxyPort), null))) {
 				try (ProxyProvider proxyClient0 = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
 					final Lock<Double, IOException> lock0 = new Lock<>();
-					try (PingConnecter client0 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient0.raw())))) {
+					try (PingConnecter client0 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient0.raw("1"))))) {
 						client0.connect(new PingConnection() {
 							@Override
 							public void failed(IOException ioe) {
@@ -55,7 +55,7 @@ public class ProxyOpenCloseOpenPingTest {
 				}
 				try (ProxyProvider proxyClient1 = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
 					final Lock<Double, IOException> lock1 = new Lock<>();
-					try (PingConnecter client1 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient1.raw())))) {
+					try (PingConnecter client1 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient1.raw("1"))))) {
 						client1.connect(new PingConnection() {
 							@Override
 							public void failed(IOException ioe) {
