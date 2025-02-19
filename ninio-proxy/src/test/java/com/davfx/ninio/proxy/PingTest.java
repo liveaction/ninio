@@ -12,6 +12,8 @@ import com.davfx.ninio.util.Lock;
 
 import java.io.IOException;
 
+import static com.davfx.ninio.proxy.TestUtil.DEFAULT_RECIPIENT_ID;
+
 //mvn install dependency:copy-dependencies
 //sudo java -cp target/dependency/*:target/test-classes/:target/classes/ com.davfx.ninio.proxy.PingTest
 public class PingTest {
@@ -27,7 +29,7 @@ public class PingTest {
 			
 			try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultUnsecureServer(new Address(Address.ANY, proxyPort), null))) {
 				try (ProxyProvider proxyClient = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
-					try (PingConnecter client = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient.raw())))) {
+					try (PingConnecter client = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient.raw(DEFAULT_RECIPIENT_ID))))) {
 						client.connect(new PingConnection() {
 							@Override
 							public void failed(IOException ioe) {

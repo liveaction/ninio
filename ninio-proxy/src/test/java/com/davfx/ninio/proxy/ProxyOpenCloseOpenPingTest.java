@@ -12,6 +12,8 @@ import com.davfx.ninio.util.Lock;
 
 import java.io.IOException;
 
+import static com.davfx.ninio.proxy.TestUtil.DEFAULT_RECIPIENT_ID;
+
 //mvn install dependency:copy-dependencies
 //sudo java -cp target/dependency/*:target/test-classes/:target/classes/ com.davfx.ninio.proxy.PingTest
 public class ProxyOpenCloseOpenPingTest {
@@ -26,7 +28,7 @@ public class ProxyOpenCloseOpenPingTest {
 			try (Disconnectable proxyServer = ninio.create(ProxyServer.defaultUnsecureServer(new Address(Address.ANY, proxyPort), null))) {
 				try (ProxyProvider proxyClient0 = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
 					final Lock<Double, IOException> lock0 = new Lock<>();
-					try (PingConnecter client0 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient0.raw())))) {
+					try (PingConnecter client0 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient0.raw(DEFAULT_RECIPIENT_ID))))) {
 						client0.connect(new PingConnection() {
 							@Override
 							public void failed(IOException ioe) {
@@ -55,7 +57,7 @@ public class ProxyOpenCloseOpenPingTest {
 				}
 				try (ProxyProvider proxyClient1 = ninio.create(ProxyClient.defaultUnsecureClient(new Address(Address.LOCALHOST, proxyPort)))) {
 					final Lock<Double, IOException> lock1 = new Lock<>();
-					try (PingConnecter client1 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient1.raw())))) {
+					try (PingConnecter client1 = PingTimeout.wrap(1d, ninio.create(PingClient.builder().with(proxyClient1.raw(DEFAULT_RECIPIENT_ID))))) {
 						client1.connect(new PingConnection() {
 							@Override
 							public void failed(IOException ioe) {
