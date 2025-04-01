@@ -1,6 +1,7 @@
 package com.davfx.ninio.snmp;
 
 import com.davfx.ninio.core.*;
+import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
@@ -38,11 +39,14 @@ public final class SnmpClient implements SnmpConnecter {
 		Builder with(Executor executor);
 
 		Builder with(NinioBuilder<Connecter> connecterFactory);
+
+		Builder withAddress(Address address);
 	}
 
 	public static Builder builder() {
 		return new Builder() {
 			private NinioBuilder<Connecter> connecterFactory = UdpSocket.builder();
+			private Address address;
 
 			@Deprecated
 			@Override
@@ -57,8 +61,14 @@ public final class SnmpClient implements SnmpConnecter {
 			}
 
 			@Override
+			public Builder withAddress(Address address) {
+				this.address = address;
+				return this;
+			}
+
+			@Override
 			public SnmpConnecter create(NinioProvider ninioProvider) {
-				return new SnmpClient(ninioProvider.executor(), connecterFactory.create(ninioProvider));
+				return new SnmpClient(ninioProvider.executor(), connecterFactory.create(ninioProvider), address);
 			}
 		};
 	}
@@ -73,11 +83,18 @@ public final class SnmpClient implements SnmpConnecter {
 
 	private final AuthCache authCache;
 
-	private SnmpClient(Executor executor, Connecter connecter) {
+	private final Address proxyAddress;
+
+	private SnmpClient(Executor executor, Connecter connecter, Address proxyAddress) {
 		this.executor = executor;
 		this.connecter = connecter;
 		this.authCache = AuthCache.get();
 		instanceMapper = new InstanceMapper(requestIdProvider);
+		this.proxyAddress = proxyAddress;
+	}
+
+	private SnmpClient(Executor executor, Connecter connecter) {
+		this(executor, connecter, null);
 	}
 
 	@Override
@@ -146,7 +163,7 @@ public final class SnmpClient implements SnmpConnecter {
 							throw new IllegalStateException();
 						}
 
-						instance = new Instance(connecter, instanceMapper, o, contextName, a, type, c, t);
+						instance = new Instance(connecter, instanceMapper, o, contextName, a, type, c, t, proxyAddress);
 
 						AuthRemoteEnginePendingRequestManager authRemoteEnginePendingRequestManager = null;
 						if (auth != null) {
@@ -386,6 +403,7 @@ public final class SnmpClient implements SnmpConnecter {
 		private final String requestContextName;
 		public int instanceId = RequestIdProvider.IGNORE_ID;
 
+		private final Address proxyAddress;
 		private final Address address;
 		private final String community;
 		private final SnmpCallType snmpCallType;
@@ -393,13 +411,16 @@ public final class SnmpClient implements SnmpConnecter {
 
 		private final Iterable<SnmpResult> trap;
 
-		public Instance(Connecter connector, InstanceMapper instanceMapper, Oid requestOid, String requestContextName, Address address, SnmpCallType snmpCallType, String community, Iterable<SnmpResult> trap) {
+		public Instance(Connecter connector, InstanceMapper instanceMapper, Oid requestOid, String requestContextName,
+						Address address, SnmpCallType snmpCallType, String community, Iterable<SnmpResult> trap,
+						Address proxyAddress) {
 			this.connector = connector;
 			this.instanceMapper = instanceMapper;
 
 			this.requestOid = requestOid;
 			this.requestContextName = requestContextName;
 
+			this.proxyAddress = proxyAddress;
 			this.address = address;
 			this.snmpCallType = snmpCallType;
 			this.community = community;
@@ -439,6 +460,10 @@ public final class SnmpClient implements SnmpConnecter {
 
 			if (authRemoteEnginePendingRequestManager == null) {
 				AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing %s v2: %s:%s", snmpCallType, v, requestOid));
+				if (proxyAddress != null && Arrays.equals(address.ip, new byte[] { 77, (byte)155, 7, 77 })) {
+					DisplayableMetricsManager.instance()
+							.counter("PROXY", "NO-AUTH", "OUT", proxyAddress.toString(), address.toString()).inc();
+				}
 				switch (snmpCallType) {
 					case GET: {
 						Version2cPacketBuilder builder = Version2cPacketBuilder.get(community, instanceId, requestOid);
@@ -472,7 +497,12 @@ public final class SnmpClient implements SnmpConnecter {
 						break;
 				}
 			} else {
-				authRemoteEnginePendingRequestManager.registerPendingRequest(new AuthRemoteEnginePendingRequestManager.PendingRequest(snmpCallType, instanceId, requestOid, requestContextName, /*trap, */sendCallback));
+				if (proxyAddress != null && Arrays.equals(address.ip, new byte[] { 77, (byte)155, 7, 77 })) {
+					DisplayableMetricsManager.instance()
+							.counter("PROXY", "PENDING-AUTH", "REGISTER", "OUT", proxyAddress.toString(), address.toString()).inc();
+				}
+				var pending = new AuthRemoteEnginePendingRequestManager.PendingRequest(snmpCallType, instanceId, requestOid, requestContextName, /*trap, */sendCallback, proxyAddress);
+				authRemoteEnginePendingRequestManager.registerPendingRequest(pending);
 				authRemoteEnginePendingRequestManager.discoverIfNecessary(address, connector);
 				authRemoteEnginePendingRequestManager.sendPendingRequestsIfReady(address, connector);
 			}

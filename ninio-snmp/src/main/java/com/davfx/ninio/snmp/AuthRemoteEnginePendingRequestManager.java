@@ -3,6 +3,7 @@ package com.davfx.ninio.snmp;
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Connecter;
 import com.davfx.ninio.core.SendCallback;
+import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -73,7 +75,10 @@ public final class AuthRemoteEnginePendingRequestManager {
         }
 
         for (AuthRemoteEnginePendingRequestManager.PendingRequest r : pendingRequests) {
-
+            if (r.proxyAddress != null && Arrays.equals(address.ip, new byte[] { 77, (byte)155, 7, 77 })) {
+                DisplayableMetricsManager.instance()
+                        .counter("PROXY", "WITH-AUTH", "OUT", r.proxyAddress.toString(), address.toString()).inc();
+            }
             switch (r.request) {
                 case GET: {
                     AUTH_TRACKER_OUT.track(Address.ipToString(address.ip), v -> String.format("Writing GET v3: %s:%s", v, r.oid));
@@ -116,13 +121,15 @@ public final class AuthRemoteEnginePendingRequestManager {
         public final Oid oid;
         public final String contextName;
         public final SendCallback sendCallback;
+        public final Address proxyAddress;
 
-        public PendingRequest(SnmpCallType request, int instanceId, Oid oid, String contextName, /*Iterable<SnmpResult> trap, */SendCallback sendCallback) {
+        public PendingRequest(SnmpCallType request, int instanceId, Oid oid, String contextName, /*Iterable<SnmpResult> trap, */SendCallback sendCallback, Address proxyAddress) {
             this.request = request;
             this.instanceId = instanceId;
             this.oid = oid;
             this.contextName = contextName;
             this.sendCallback = sendCallback;
+            this.proxyAddress = proxyAddress;
         }
     }
 }

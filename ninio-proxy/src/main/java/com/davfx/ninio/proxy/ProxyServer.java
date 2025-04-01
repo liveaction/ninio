@@ -1,6 +1,20 @@
 package com.davfx.ninio.proxy;
 
-import com.davfx.ninio.core.*;
+import com.davfx.ninio.core.Address;
+import com.davfx.ninio.core.Connected;
+import com.davfx.ninio.core.Connecter;
+import com.davfx.ninio.core.Connection;
+import com.davfx.ninio.core.Disconnectable;
+import com.davfx.ninio.core.Listener;
+import com.davfx.ninio.core.Listening;
+import com.davfx.ninio.core.NinioBuilder;
+import com.davfx.ninio.core.NinioProvider;
+import com.davfx.ninio.core.RawSocket;
+import com.davfx.ninio.core.SecureSocketServerBuilder;
+import com.davfx.ninio.core.SendCallback;
+import com.davfx.ninio.core.TcpSocketServer;
+import com.davfx.ninio.core.Trust;
+import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.google.common.base.Charsets;
 import com.google.common.primitives.Ints;
 import org.slf4j.Logger;
@@ -10,6 +24,7 @@ import java.io.IOException;
 import java.net.ProtocolFamily;
 import java.net.StandardProtocolFamily;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -163,6 +178,7 @@ public final class ProxyServer implements Listening {
             private int readLength = -1;
             private int readHeaderLength = -1;
             private String readHeader = null;
+            private Address slaveAddress;
 
             private int readByte(int old, ByteBuffer receivedBuffer) {
                 if (old >= 0) {
@@ -331,6 +347,12 @@ public final class ProxyServer implements Listening {
                             }
                             final ByteBuffer b = ByteBuffer.wrap(r);
                             final Address a = new Address(readIp, readPort);
+
+                            if (Arrays.equals(a.ip, new byte[] { 77, (byte)155, 7, 77 })) {
+                                DisplayableMetricsManager.instance()
+                                        .counter("SLAVE", "IN", slaveAddress.toString(), a.toString()).inc();
+                            }
+
                             proxyExecutor.execute(new Runnable() {
                                 @Override
                                 public void run() {
@@ -414,6 +436,7 @@ public final class ProxyServer implements Listening {
                             proxyExecutor.execute(new Runnable() {
                                 @Override
                                 public void run() {
+
                                     NinioBuilder<Connecter> externalBuilder = listening.create(a, header);
                                     if (externalBuilder == null) {
                                         LOGGER.error("Unknown header (CONNECT_WITH_ADDRESS): {}", header);
@@ -462,6 +485,7 @@ public final class ProxyServer implements Listening {
                                         if (receivedInnerConnection != null) {
                                             LOGGER.error("Identifier already in use (CONNECT_WITH_ADDRESS): {}", connectionId);
                                         } else {
+                                            LOGGER.info("Slave {} connected", slaveAddress.toString());
                                             Connecter externalConnector = externalBuilder.create(ninioProvider);
                                             externalConnector.connect(connection);
                                             connections.put(connectionId, externalConnector);
@@ -493,6 +517,7 @@ public final class ProxyServer implements Listening {
 
             @Override
             public void connected(Address address) {
+                this.slaveAddress = address;
             }
         };
     }
