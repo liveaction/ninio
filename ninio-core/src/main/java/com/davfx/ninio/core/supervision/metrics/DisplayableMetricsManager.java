@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -166,6 +167,14 @@ public class DisplayableMetricsManager {
 
     public PercentMetric percent(long staticValue, LongMetric trackerB, MetricsParams params) {
         return addIfAbsent(new PercentMetric(new StaticCounter(staticValue), trackerB, key(params.tags())), params);
+    }
+
+    public SupplierMetric supplier(Supplier<String> supplier, String... tags) {
+        return supplier(supplier, new MetricsParams(tags));
+    }
+
+    public SupplierMetric supplier(Supplier<String> supplier, MetricsParams params) {
+        return addIfAbsent(new SupplierMetric(key(params.tags()), supplier), params);
     }
 
     private void display(boolean clear) {
