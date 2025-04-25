@@ -2,7 +2,6 @@ package com.davfx.ninio.core;
 
 import com.davfx.ninio.core.dependencies.Dependencies;
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
-import com.davfx.ninio.core.supervision.metrics.MetricsParams;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.util.ConfigUtils;
@@ -215,8 +214,14 @@ public final class UdpSocket implements Connecter {
                     if (SOCKET_READ_BUFFER_SIZE > 0L) {
                         channel.socket().setReceiveBufferSize((int) SOCKET_READ_BUFFER_SIZE);
                     }
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Socket receive buffer size: {}", channel.socket().getReceiveBufferSize());
+                    }
                     if (SOCKET_WRITE_BUFFER_SIZE > 0L) {
                         channel.socket().setSendBufferSize((int) SOCKET_WRITE_BUFFER_SIZE);
+                    }
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Socket send buffer size: {}", channel.socket().getSendBufferSize());
                     }
                     final SelectionKey selectionKey = queue.register(channel);
                     currentSelectionKey = selectionKey;
