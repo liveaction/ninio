@@ -505,6 +505,11 @@ public final class SnmpClient implements SnmpConnecter {
 				return;
 			}
 
+			if (errorStatus == BerConstants.ERROR_STATUS_AUTHORIZATION_ERROR) {
+				fail(new IOException("Authorization error"));
+				return;
+			}
+
 			if (errorStatus != 0) {
 				LOGGER.trace("Received error: {}/{}", errorStatus, errorIndex);
 			}
