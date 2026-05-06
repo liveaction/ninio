@@ -11,6 +11,7 @@ import com.davfx.ninio.core.SendCallback;
 import com.davfx.ninio.core.TcpSocket;
 import com.davfx.ninio.core.Trust;
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.google.common.base.Charsets;
@@ -213,10 +214,8 @@ public final class ProxyClient implements ProxyProvider {
             this.connectAddress = connectAddress;
 
             innerConnection = new InnerConnection();
-            String prefix = "proxy-client";
-            inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
-            outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
-            DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
+            inTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().proxyClientIn());
+            outTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().proxyClientOut());
 
             proxyExecutor.execute(() -> {
                 innerConnection.connectionId = nextConnectionId;

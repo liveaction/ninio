@@ -1,8 +1,7 @@
 package com.davfx.ninio.core;
 
 import com.davfx.ninio.core.dependencies.Dependencies;
-import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
-import com.davfx.ninio.core.supervision.metrics.MetricsParams;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.util.ConfigUtils;
@@ -186,10 +185,8 @@ public final class UdpSocket implements Connecter {
         this.queue = queue;
         this.byteBufferAllocator = byteBufferAllocator;
         this.bindAddress = bindAddress;
-        String prefix = "UDP";
-        inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
-        outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
-        DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
+        inTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().udpIn());
+        outTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().udpOut());
     }
 
     @Override

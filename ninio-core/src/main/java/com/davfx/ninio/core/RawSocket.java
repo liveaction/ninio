@@ -1,7 +1,6 @@
 package com.davfx.ninio.core;
 
-import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
-import com.davfx.ninio.core.supervision.metrics.MetricsParams;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.util.SerialExecutor;
@@ -82,10 +81,8 @@ public final class RawSocket implements Connecter {
         this.family = family;
         this.protocol = protocol;
         this.bindAddress = bindAddress;
-        String prefix = "RAW";
-        outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
-        inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
-        DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
+        inTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().rawIn());
+        outTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().rawOut());
     }
 
     @Override

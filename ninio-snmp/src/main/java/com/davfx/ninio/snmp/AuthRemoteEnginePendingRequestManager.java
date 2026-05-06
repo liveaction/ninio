@@ -3,6 +3,7 @@ package com.davfx.ninio.snmp;
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.Connecter;
 import com.davfx.ninio.core.SendCallback;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import org.slf4j.Logger;
@@ -15,8 +16,8 @@ import java.util.List;
 
 public final class AuthRemoteEnginePendingRequestManager {
 
-    private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("AUTH", "V3", "OUT");
-    private final static RequestTracker DISCOVER_TRACKER_OUT = RequestTrackerManager.instance().getTracker("DISCOVER", "V3", "OUT");
+    private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker(NinioMetrics.get().authV3Out());
+    private final static RequestTracker DISCOVER_TRACKER_OUT = RequestTrackerManager.instance().getTracker(NinioMetrics.get().discoverV3Out());
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthRemoteEnginePendingRequestManager.class);
 
