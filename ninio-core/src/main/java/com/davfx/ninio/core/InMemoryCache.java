@@ -1,6 +1,7 @@
 package com.davfx.ninio.core;
 
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.util.DateUtils;
@@ -93,10 +94,8 @@ public final class InMemoryCache {
         private Connection connectCallback = null;
 
         public InnerConnecter(String name, double dataExpiration, double requestExpiration, Interpreter<T> interpreter, Connecter wrappee) {
-            String prefix = name + "_cache";
-            this.cacheOutputCounter = RequestTrackerManager.instance().getTracker(prefix, "out");
-            this.cacheInputCounter = RequestTrackerManager.instance().getTracker(prefix, "in");
-            DisplayableMetricsManager.instance().percent(cacheOutputCounter, cacheInputCounter, prefix, "lost");
+            this.cacheOutputCounter = RequestTrackerManager.instance().getTracker(NinioMetrics.get().inMemoryCache(name, "out"));
+            this.cacheInputCounter = RequestTrackerManager.instance().getTracker(NinioMetrics.get().inMemoryCache(name, "in"));
             this.dataExpiration = dataExpiration;
             this.requestExpiration = Math.min(dataExpiration, requestExpiration);
             this.interpreter = interpreter;

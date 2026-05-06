@@ -9,6 +9,7 @@ import com.davfx.ninio.core.Nop;
 import com.davfx.ninio.core.RawSocket;
 import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.davfx.ninio.core.supervision.metrics.MetricsParams;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.string.Identifiers;
@@ -75,10 +76,8 @@ public final class PingClient implements PingConnecter {
         this.executor = executor;
         this.connecter = connecter;
         clientIdentifier = Identifiers.identifier();
-        String prefix = "PING";
-        outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
-        inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
-        DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
+        inTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().pingIn());
+        outTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().pingOut());
     }
 
     private static void closeSendCallbacks(Map<Address, PingReceiver> receivers) {

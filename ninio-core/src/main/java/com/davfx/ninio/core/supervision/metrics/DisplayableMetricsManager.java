@@ -149,10 +149,6 @@ public class DisplayableMetricsManager {
         return addIfAbsent(new TimerMetric(key(params.tags())), params);
     }
 
-    public RequestTracker tracker(RequestTracker tracker) {
-        return addIfAbsent(tracker, new MetricsParams());
-    }
-
     public PercentMetric percent(LongMetric trackerA, LongMetric trackerB, String... tags) {
         return percent(trackerA, trackerB, new MetricsParams(tags));
     }
