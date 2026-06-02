@@ -1,8 +1,7 @@
 package com.davfx.ninio.core;
 
 import com.davfx.ninio.core.dependencies.Dependencies;
-import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
-import com.davfx.ninio.core.supervision.metrics.MetricsParams;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.util.ClassThreadFactory;
@@ -164,10 +163,8 @@ public final class TcpdumpSocket implements Connecter {
         this.mode = mode;
         this.rule = rule;
         this.bindAddress = bindAddress;
-        String prefix = "TCP_DUMP";
-        inTracker = RequestTrackerManager.instance().getTracker(prefix, "in");
-        outTracker = RequestTrackerManager.instance().getTracker(prefix, "out");
-        DisplayableMetricsManager.instance().percent(outTracker, inTracker, prefix, "lost");
+        inTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().tcpDumpIn());
+        outTracker = RequestTrackerManager.instance().getTracker(NinioMetrics.get().tcpDumpOut());
     }
 
     @Override

@@ -2,12 +2,11 @@ package com.davfx.ninio.core.supervision.tracking;
 
 import com.davfx.ninio.core.Address;
 import com.davfx.ninio.core.dependencies.Dependencies;
-import com.davfx.ninio.core.supervision.metrics.DisplayableMetricsManager;
 import com.davfx.ninio.util.ConfigUtils;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
+import io.prometheus.metrics.core.metrics.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,11 +52,11 @@ public final class RequestTrackerManager implements Closeable {
         executor.scheduleAtFixedRate(this::loadTrackingDevices, 2, 5, TimeUnit.SECONDS);
     }
 
-    public RequestTracker getTracker(String... tags) {
-        return requestTrackers.computeIfAbsent(DisplayableMetricsManager.key(ImmutableList.copyOf(tags)), name -> {
-            RequestTracker requestTracker = new RequestTracker(name);
+    public RequestTracker getTracker(Counter counter) {
+        return requestTrackers.computeIfAbsent(counter.getPrometheusName(), __ -> {
+            RequestTracker requestTracker = new RequestTracker(counter);
             requestTracker.setAddressToFollow(addressesToFollow.get());
-            return DisplayableMetricsManager.instance().tracker(requestTracker);
+            return requestTracker;
         });
     }
 

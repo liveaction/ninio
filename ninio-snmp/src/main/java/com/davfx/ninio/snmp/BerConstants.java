@@ -6,10 +6,11 @@ public final class BerConstants {
 	public static final int ERROR_STATUS_AUTHENTICATION_FAILED = -2;
 	public static final int ERROR_STATUS_TIMEOUT = -3; // Used in cache server
 	public static final int ERROR_STATUS_UNKNOWN = -4;
+	public static final int ERROR_STATUS_AUTHORIZATION_ERROR = 16;
 
 	public static final int VERSION_2C = 1;
 	public static final int VERSION_3 = 3;
-	
+
 	public static final int VERSION_3_USM_SECURITY_MODEL = 3;
 	public static final int VERSION_3_AUTH_FLAG = 0x01;
 	public static final int VERSION_3_PRIV_FLAG = 0x02;
@@ -35,7 +36,7 @@ public final class BerConstants {
 	public static final int UNSIGNEDINTEGER32 = ASN_APPLICATION | 0x07;
 	public static final int SEQUENCE = ASN_CONSTRUCTOR | 0x10;
 
-	private static final int OPAQUE_TAG = 0x30;
+    private static final int OPAQUE_TAG = 0x30;
 	public static final int OPAQUE_FLOAT = (ASN_APPLICATION | 0x08) + OPAQUE_TAG;
 	public static final int OPAQUE_DOUBLE = (ASN_APPLICATION | 0x09) + OPAQUE_TAG;
 	public static final int OPAQUE_INTEGER64 = (ASN_APPLICATION | 0x0A) + OPAQUE_TAG;

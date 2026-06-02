@@ -1,6 +1,13 @@
 package com.davfx.ninio.snmp;
 
-import com.davfx.ninio.core.*;
+import com.davfx.ninio.core.Address;
+import com.davfx.ninio.core.Connecter;
+import com.davfx.ninio.core.Connection;
+import com.davfx.ninio.core.NinioBuilder;
+import com.davfx.ninio.core.NinioProvider;
+import com.davfx.ninio.core.SendCallback;
+import com.davfx.ninio.core.UdpSocket;
+import com.davfx.ninio.core.supervision.metrics.NinioMetrics;
 import com.davfx.ninio.core.supervision.tracking.RequestTracker;
 import com.davfx.ninio.core.supervision.tracking.RequestTrackerManager;
 import com.davfx.ninio.snmp.dependencies.Dependencies;
@@ -14,7 +21,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 
 import static com.davfx.ninio.snmp.AuthCache.AUTH_ENGINES_CACHE_DURATION;
@@ -25,7 +37,7 @@ public final class SnmpClient implements SnmpConnecter {
 
 	private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(SnmpClient.class.getPackage().getName());
 
-	private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker("AUTH", "V2", "OUT");
+	private final static RequestTracker AUTH_TRACKER_OUT = RequestTrackerManager.instance().getTracker(NinioMetrics.get().authV2Out());
 
 	public static final int DEFAULT_PORT = 161;
 
@@ -502,6 +514,11 @@ public final class SnmpClient implements SnmpConnecter {
 
 			if (errorStatus == BerConstants.ERROR_STATUS_TIMEOUT) {
 				fail(new IOException("Timeout"));
+				return;
+			}
+
+			if (errorStatus == BerConstants.ERROR_STATUS_AUTHORIZATION_ERROR) {
+				fail(new IOException("Authorization error"));
 				return;
 			}
 
