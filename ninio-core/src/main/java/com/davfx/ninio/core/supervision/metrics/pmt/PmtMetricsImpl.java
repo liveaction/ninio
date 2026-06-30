@@ -17,7 +17,6 @@ package com.davfx.ninio.core.supervision.metrics.pmt;
 
 import com.davfx.ninio.core.dependencies.Dependencies;
 import com.davfx.ninio.util.ConfigUtils;
-import com.davfx.ninio.util.LogTag;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
@@ -74,6 +73,7 @@ public class PmtMetricsImpl implements PmtMetrics {
     }
 
     private void updateRecurringMetrics() {
+        LOGGER.debug("Updating {} recurring metrics", RECURRING_METRIC_UPDATES.size());
         for (Runnable metricUpdate : RECURRING_METRIC_UPDATES) {
             metricUpdate.run();
         }
