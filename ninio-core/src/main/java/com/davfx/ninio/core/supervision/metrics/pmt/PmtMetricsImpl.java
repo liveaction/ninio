@@ -17,6 +17,7 @@ package com.davfx.ninio.core.supervision.metrics.pmt;
 
 import com.davfx.ninio.core.dependencies.Dependencies;
 import com.davfx.ninio.util.ConfigUtils;
+import com.davfx.ninio.util.LogTag;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.typesafe.config.Config;
@@ -28,6 +29,8 @@ import io.prometheus.metrics.core.metrics.Summary;
 import io.prometheus.metrics.model.registry.Collector;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.prometheus.metrics.model.snapshots.Unit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Set;
@@ -43,6 +46,8 @@ import java.util.concurrent.TimeUnit;
  * @author Baptiste Le Bail
  */
 public class PmtMetricsImpl implements PmtMetrics {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PmtMetricsImpl.class);
 
     private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(PmtMetricsImpl.class.getPackage().getName());
     private static final Duration RECURRING_METRIC_UPDATE_RATE = Duration.ofMillis((long) ConfigUtils.getDuration(CONFIG, "updateRate") * 1000);
@@ -62,6 +67,7 @@ public class PmtMetricsImpl implements PmtMetrics {
 
     private void scheduleRecurringMetrics() {
         ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("recurring-metrics").build();
+        LOGGER.debug("Recurring metrics rate = {}", RECURRING_METRIC_UPDATE_RATE);
         try (ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(threadFactory)) {
             scheduler.scheduleAtFixedRate(this::updateRecurringMetrics, 0, RECURRING_METRIC_UPDATE_RATE.getSeconds(), TimeUnit.SECONDS);
         }
