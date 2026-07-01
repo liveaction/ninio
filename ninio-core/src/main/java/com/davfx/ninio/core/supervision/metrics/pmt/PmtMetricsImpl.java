@@ -28,6 +28,8 @@ import io.prometheus.metrics.core.metrics.Summary;
 import io.prometheus.metrics.model.registry.Collector;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.prometheus.metrics.model.snapshots.Unit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Set;
@@ -44,33 +46,39 @@ import java.util.concurrent.TimeUnit;
  */
 public class PmtMetricsImpl implements PmtMetrics {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PmtMetricsImpl.class);
+
     private static final Config CONFIG = ConfigUtils.load(new Dependencies()).getConfig(PmtMetricsImpl.class.getPackage().getName());
-    private static final Duration RECURRING_METRIC_UPDATE_RATE = Duration.ofMillis((long) ConfigUtils.getDuration(CONFIG, "updateRate") * 1000);
+    private static final Duration RECURRING_METRIC_UPDATE_RATE = Duration.ofMillis((long) ConfigUtils.getDuration(CONFIG, "updateRate"));
 
     private static final Set<Runnable> RECURRING_METRIC_UPDATES = ConcurrentHashMap.newKeySet();
     private static final PrometheusRegistry REGISTRY = PrometheusRegistry.defaultRegistry;
 
     private static final PmtMetricsImpl INSTANCE = new PmtMetricsImpl();
 
+    private final ScheduledExecutorService scheduler;
+
     public static PmtMetrics get() {
         return INSTANCE;
     }
 
     private PmtMetricsImpl() {
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("pmt-recurring-metrics")
+                .build();
+        this.scheduler = Executors.newSingleThreadScheduledExecutor(threadFactory);
         scheduleRecurringMetrics();
     }
 
     private void scheduleRecurringMetrics() {
-        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("recurring-metrics").build();
-        try (ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(threadFactory)) {
-            scheduler.scheduleAtFixedRate(this::updateRecurringMetrics, 0, RECURRING_METRIC_UPDATE_RATE.getSeconds(), TimeUnit.SECONDS);
-        }
-    }
+        LOGGER.debug("Recurring metrics rate = {}", RECURRING_METRIC_UPDATE_RATE);
 
-    private void updateRecurringMetrics() {
-        for (Runnable metricUpdate : RECURRING_METRIC_UPDATES) {
-            metricUpdate.run();
-        }
+        scheduler.scheduleAtFixedRate(() -> {
+            LOGGER.debug("Updating {} recurring metrics", RECURRING_METRIC_UPDATES.size());
+            for (Runnable metricUpdate : RECURRING_METRIC_UPDATES) {
+                metricUpdate.run();
+            }
+        }, 0, RECURRING_METRIC_UPDATE_RATE.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
